@@ -50,6 +50,8 @@ This is the **methodology-validation small-model variant**. It's NOT a numbers-p
 | Min row cos | 0.313 |
 | Max row cos | 0.558 |
 
+**Honest failure-rate disclosure.** 16% of attempted eval rows (8 of 50) produced empty AV outputs and were excluded from the cos calculation. That is a real failure mode of the small-model variant, not a quirk of the eval set. The v0.1.x release with the diversified 9-source-family corpus and a longer SFT step budget is the test of whether scale fixes it.
+
 See the `eval_provenance` field in the model's `nla_meta.yaml` sidecar for full reproducibility: results-JSON path, parquet SHA-256, commit SHA, paired-with-checkpoint reference, and inline headline numbers (per the eval-provenance convention introduced in our research repo).
 
 ## Architecture and training

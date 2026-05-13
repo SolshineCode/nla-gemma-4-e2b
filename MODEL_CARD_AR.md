@@ -56,6 +56,8 @@ This is the **first half-precision LoRA AR** of the public NLA family — Anthro
 
 Round-trip cos is the matched AV+AR pair on held-out OpenWebText activations. The eval is symmetric: round-trip cos quality is co-determined by both halves of the pair, so this number is the AR's quality marker as much as the AV's.
 
+**Honest failure-rate disclosure.** 16% of attempted eval rows (8 of 50) produced empty AV outputs and were excluded from the cos calculation. The empty-output mode is on the AV side, not this AR, but it is the joint pair's failure rate at eval time. That is a real failure mode of the small-model variant, not a quirk of the eval set. The v0.1.x release with the diversified 9-source-family corpus and a longer SFT step budget is the test of whether scale fixes it.
+
 ## Intended use
 
 - Round-trip eval of any candidate AV checkpoint targeting Gemma-4-E2B L23

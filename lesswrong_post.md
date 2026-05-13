@@ -10,10 +10,13 @@ Anthropic's Natural Language Autoencoder (NLA) methodology converts a language m
 
 I trained a small-model variant on a **4 GB GTX 1650 Ti Max-Q laptop**. It follows Anthropic's recipe, it's open-source, and it's now on HuggingFace:
 
-- **AV (Actor)**: [`Solshine/gemma-4-e2b-nla-L23-av-v0_0_1`](#)
-- **AR (Critic)**: [`Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1`](#)
-- **Companion dataset**: [`Solshine/gemma-4-e2b-deception-behavior-completions`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-deception-behavior-completions)
-- **Source repo**: https://github.com/SolshineCode/deception-nanochat-sae-research
+- **Bundled public release**: https://github.com/SolshineCode/nla-gemma-4-e2b (v0.0.1 tag)
+- **AV (Actor)**: [`Solshine/gemma-4-e2b-nla-L23-av-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1)
+- **AR (Critic)**: [`Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1)
+- **AR-SFT training dataset (Claude Haiku persona+audit, 696 rows)**: [`Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit)
+- **AV-SFT diversified training dataset (Gemini persona+audit, 4,734 rows)**: [`Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-gemini-persona-audit`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-gemini-persona-audit)
+- **Companion deception dataset**: [`Solshine/gemma-4-e2b-deception-behavior-completions`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-deception-behavior-completions)
+- **Source repo (full reproducibility chain)**: https://github.com/SolshineCode/deception-nanochat-sae-research
 
 Honest framing up front. This is NOT a numbers-parity release with Anthropic's 7B+ variants. Round-trip cos is **0.438** ± 0.054, not their 0.7+. What this release contributes is the descope-and-democratize side of the work, plus the full reproducibility chain that lets anyone with a consumer GPU actually run NLA-style interpretability now.
 
@@ -46,6 +49,8 @@ It uses 4 GB VRAM (NF4 4-bit base plus LoRA r=64 adapters), trains in about 3 ho
 ![Round-trip cosine distribution](https://github.com/SolshineCode/deception-nanochat-sae-research/raw/main/experiments/v8_nla_local/release/v0_0_1/figures/02_round_trip_cos_distribution_v0_0_1.png)
 
 Round-trip cosine similarity is **0.438 ± 0.054** on n=42 held-out activations from OpenWebText. 100% of evaluated rows clear the 0.30 noise-floor threshold. The distribution is clean and unimodal. No degenerate rows. Min cos = 0.313, max = 0.558.
+
+But the n=42 hides something I want to be explicit about. The eval started with 50 attempted rows; **8 of them (16%) produced empty AV outputs and were excluded.** That's a real failure mode of the small-model variant at eval time, not a quirk of the held-out set. The v0.1.x release with the diversified 9-source-family corpus and a longer SFT step budget is the test of whether scale fixes it. If it doesn't, the empty-output rate becomes the load-bearing limitation of the consumer-GPU NLA path and we will say so plainly.
 
 That's well below Anthropic's published 7B numbers (which run in the 0.7+ range), and we say so explicitly in the model card. The point of the release is methodology validation at small-model scale, not parity on the absolute numbers.
 
@@ -116,7 +121,8 @@ Kit Fraser-Taliente, if you read this, thanks for publishing the NLA methodology
 
 | | |
 |---|---|
-| Models on HF | [Solshine/gemma-4-e2b-nla-L23-av-v0_0_1](#) and [-ar-v0_0_1](#) |
+| Bundled release | [SolshineCode/nla-gemma-4-e2b](https://github.com/SolshineCode/nla-gemma-4-e2b) |
+| Models on HF | [Solshine/gemma-4-e2b-nla-L23-av-v0_0_1](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1) and [-ar-v0_0_1](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1) |
 | Dataset on HF | [Solshine/gemma-4-e2b-deception-behavior-completions](https://huggingface.co/datasets/Solshine/gemma-4-e2b-deception-behavior-completions) |
 | Source repo | https://github.com/SolshineCode/deception-nanochat-sae-research |
 | Realistic-path roadmap | [notes/V8_ANTHROPIC_GRADE_PATH_2026-05-11.md](https://github.com/SolshineCode/deception-nanochat-sae-research/blob/main/notes/V8_ANTHROPIC_GRADE_PATH_2026-05-11.md) |
