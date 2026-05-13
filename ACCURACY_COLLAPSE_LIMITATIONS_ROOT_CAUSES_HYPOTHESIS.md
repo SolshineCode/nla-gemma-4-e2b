@@ -103,3 +103,133 @@ This document exists to make that distinction unambiguous in the record.
 2. Complete v0.1.x ar_sft labeling (watchdog in progress, ~16% complete) and train the full v0.1.0 NLA pair. Run round-trip eval with the new per-row diversity metric. This is the load-bearing experiment.
 3. Implement the per-row diversity metric in `eval_round_trip.py` and back-fit it to all existing eval JSONs to surface the dissociation historically.
 4. Begin the second-model NLA (Mistral-7B or OLMo-7B on rented A100) to test whether scale + diverse labels + matched pair produces both cos > 0.5 AND per-row diversity > 50 patterns per 100 rows at the 7B base model size.
+
+---
+
+# Investigation Report: 6-Hypothesis Team Findings (2026-05-12)
+
+## Method
+
+After authoring the five-cause hypothesis above, a team of six subagent / direct investigations ran in parallel and sequence against the v0.0.1 AV+AR pair. Three CPU-only data audits, three GPU experiments. Each tested a distinct hypothesis. Results consolidated and synthesized below.
+
+| Agent | Hypothesis | Verdict | Mechanism |
+|---|---|---|---|
+| H3 | gpt-4o-mini labels are themselves templated | **REFUTED** | 100% unique label strings, 957 unique "discusses X" fillers, mean label length 542 chars |
+| H4 | Activations cluster naturally into 4 groups | **REFUTED** | Mean pairwise cos 0.24, effective rank ~17, silhouette < 0.12 at all k. Activations are diffuse; templates do not align with structure |
+| H6 (open) | Surface new root causes | **Surfaced H9, H10, H11, H12** + storage-truncation bug | See below |
+| H1 | Greedy decoding masks AV diversity | **PARTIALLY SUPPORTED but more diagnostic finding** | Sampling produces 100% unique strings vs greedy's 5/8, but **all sampled outputs are topically wrong** |
+| H11 | max_new_tokens=120 truncates generation | **REFUTED** | Greedy naturally terminates at 520-605 chars regardless of cap (cap=120 and cap=250 produce identical-length outputs) |
+| H2 | AV ignores injected vector | **PARTIALLY SUPPORTED** | ZERO vector → 100% empty output (10/10). REAL vs RAND produce same-magnitude diversity (6 vs 7 unique). Direction matters, but mapping is essentially arbitrary |
+| H5/H8 | AR has positional shortcuts; cos doesn't measure faithfulness | **STRONGLY CONFIRMED** | AR produces cos 0.405 from EMPTY input. AV explanation contributes mean 0.024 cos over baseline. The published cos 0.438 is ~95% structural AR projection, ~5% explanation-dependent |
+
+## Storage truncation bug (the meta-finding)
+
+`eval_round_trip.py:195` stored `"explanation": explanation[:300]` in the published v0.0.1 eval JSON. Every analysis based on that JSON read 300-char prefixes, not full outputs. The published "every output is exactly 298-299 chars" reading was an artifact of this storage cap, not a model behavior. The model actually emits 520-605 chars per row under greedy decoding. The "4 opening template stems / 81% legal case" finding was based on inspecting the prefix of truncated strings. **The truncation bug had been propagated into the public artifacts and shaped the original 5-cause hypothesis incorrectly.** Fix landed in this investigation pass.
+
+## The H5 result is the load-bearing finding
+
+The remaining 5 root-cause hypotheses (H1-H12) were chasing a phenomenon — template collapse — that turns out to be secondary. **The primary failure mode is structural in the AR**, not in the AV's generation diversity. Specifically:
+
+For 10 rows from rl.parquet, we measured AR-reconstruction cos under four explanation conditions:
+
+| Condition | Mean cos | Median | Std | All above 0.30 floor |
+|---|---|---|---|---|
+| **AV_OUT** (the actual AV-generated explanation) | **0.4292** | 0.4063 | 0.0501 | 10/10 |
+| GIBBER (random tokens / nonsense words) | 0.4135 | 0.4004 | 0.0432 | 10/10 |
+| RANDOM (unrelated Wikipedia sentences) | 0.4045 | 0.3880 | 0.0432 | 10/10 |
+| EMPTY (literally empty string) | 0.4051 | 0.3929 | 0.0424 | 10/10 |
+
+Mean within-row range across 4 conditions: 0.030. AV_OUT - EMPTY mean delta: +0.024 ± 0.021. AV_OUT - GIBBER mean delta: +0.016. **The "explanation" contributes about 5% relative to the noise-floor headroom.** The remaining 95% of cos value is determined by the AR's structural projection from any text input toward "somewhere in OpenWebText L23 activation space."
+
+This means:
+- The published headline cos 0.438 is principally a measurement of AR's content-independent projection, not a measurement of AV explanation faithfulness.
+- The 0.30 noise-floor framing was meaningless: feeding the AR nothing at all produces cos that clears the floor 10/10 times.
+- Any reproduction with arbitrary text would have shown roughly the same headline number.
+
+## The H2 result clarifies what the AV does and doesn't do
+
+| Injection | Empty rate | Unique full strings | Notes |
+|---|---|---|---|
+| REAL (the actual L23 activation) | 2/10 | 6/10 | Templates: 8 legal-case-stem + 1 new-feature-stem |
+| ZERO (zero vector) | **10/10** | 1 (all empty) | Deterministic empty output |
+| RAND (gaussian unit vector × sqrt(d_model)) | 1/10 | 7/10 | More diverse than REAL |
+| REAL repeated 3x on row 0 | 3/3 empty | 1 | Greedy is deterministic |
+
+Random gaussian vectors at the right magnitude produce **more** template variation than the actual learned activations. The AV is sensitive to injection direction (ZERO vs anything else affects whether output appears, and real vs random can pick different templates), but the mapping from direction to template is essentially arbitrary — random noise activates the same template space as real activations.
+
+Combined with the topic-mismatch observation (Hillary Clinton activations → "legal case" template under greedy or "future of work / merger / police investigation" under sampling): **the AV has learned to be sensitive to injection but has not learned to map activation content to faithful explanations**. Activation injection picks which arbitrary template gets emitted; the activation's actual semantics are not preserved.
+
+## The H1 result clarifies what sampling does
+
+10 rows × 4 generation configs (greedy/sampling × max_new_tokens 120/250):
+
+| Config | n_nonempty | Unique full strings | Unique first-80 | Unique first-200 | Mean length |
+|---|---|---|---|---|---|
+| A (greedy, max_new=120) | 8/10 | 5/8 | 2/8 | 5/8 | 445 chars |
+| B (greedy, max_new=250) | 8/10 | 5/8 | 2/8 | 5/8 | 449 chars |
+| C (sampling T=0.7 top_p=0.9, max_new=120) | 9/10 | 9/9 | 9/9 | 9/9 | 522 chars |
+| D (sampling, max_new=250) | 9/10 | 9/9 | 9/9 | 9/9 | 544 chars |
+
+Sampling delivers 100% lexically-unique outputs vs greedy's 5/8. But qualitative inspection of the sampled outputs reveals **all are topically wrong**: same Hillary Clinton activation produces "future of work" (row 0), "new policy / 100" (row 1), "successful merger" (row 2), "police investigation" (row 3). The diversity is real at the surface form, but the outputs are not source-aligned.
+
+H11 (max_new_tokens truncation) is refuted: B's outputs are nearly identical to A's (length difference 4 chars at cap difference of 130 tokens), meaning greedy is naturally terminating well before either cap. The 298-299 chars in the published eval was 100% from the storage truncation bug.
+
+## Synthesis: what is actually going on in v0.0.1
+
+Putting H1 / H2 / H3 / H4 / H5 / H6 together:
+
+1. **The AV has learned the NLA template form** (`[Immediate semantic: ...] [Narrative momentum: ...] [Final feature: ...]`) at 86%+ prefix-stem reliability across training. This is the easy lesson and it was successfully learned.
+
+2. **The AV has not learned to condition the body content on the injected activation.** It treats the activation injection as a soft-selector between a small set of unconditional-prior continuations (greedy → 4 templates), or as a noise source (sampling → diverse but topically unrelated content).
+
+3. **The AR has not learned to use the explanation text.** It learned to project from "any English text under the `Summary of <text>...</text> <summary>` template" toward a constant region of L23 activation space. This region is moderately correlated with actual L23 activations from OpenWebText (mean cos ~0.40) because both the projection and the held-out activations sit in the same broad subspace of the residual stream.
+
+4. **The "round-trip" eval measures item (3), not items (1) and (2).** Cos 0.438 is structural projection, not faithfulness. EMPTY string in, cos 0.405 out.
+
+5. **Both halves are under-trained at this scale.** Effective training exposure for the AV was ~12% (220 rows seen once at grad-accum-adjusted budget). The AR's linear head was initialized to 0.1× identity and only fine-tuned for similar effective steps. Neither half has had enough gradient signal to learn the load-bearing mapping (vector→language for the AV, language→vector for the AR).
+
+The 5 original hypotheses are re-ranked by this investigation:
+
+| Original cause | New rank | Notes |
+|---|---|---|
+| 1. Under-trained AV | Still primary | Confirmed; ~12% data exposure |
+| 2. Low-diversity labels | Demoted to secondary | Labels themselves are diverse (H3); template-prefix is the inherited part |
+| 3. No SFT diversity penalty | Demoted to secondary | Cross-entropy on diverse targets should have worked; under-training is what kept the model on the modal prior |
+| 4. Cos doesn't reveal failure mode | **Promoted to PRIMARY** | H5 shows cos is dominated by structural AR projection, not faithfulness |
+| 5. OpenWebText eval homogeneous | Refuted | Activations are diffuse (H4); eval homogeneity isn't the driver |
+
+**New primary causes:**
+- **AR is content-blind** (H5/H8 confirmed): the AR has learned a near-constant projection that the explanation text barely modulates.
+- **AV does not condition on activation content** (H2 partial + H1 qualitative): injection direction picks the template, not the content.
+- **Both halves are severely under-trained** (H1/H12 confirmed): ~12% effective training exposure makes the above two outcomes the predicted small-model failure mode.
+
+## Implications for the public release
+
+The v0.0.1 release on HuggingFace + the bundled `nla-gemma-4-e2b` repo describes the cos 0.438 number with extensive honesty framing about per-row template collapse. The H5 finding tightens that further: cos 0.438 does not measure explanation faithfulness in any meaningful sense — feeding the AR random Wikipedia sentences or nothing at all produces cos in the same range. The artifact's honest framing should now say:
+
+> v0.0.1 is a methodology-pipeline release. The trained AV and AR were under-resourced relative to the methodology's requirements and do not produce faithful per-row activation explanations. The round-trip cosine similarity of 0.438 measured on this release is principally a structural artifact of the AR's content-independent projection (mean cos 0.405 from empty-string input on the same eval set) rather than a measurement of explanation faithfulness.
+
+Public artifacts are being updated in this pass to reflect this.
+
+## What we still don't know
+
+- **Does scaled training fix this?** The under-training hypothesis predicts yes, but the H5 finding suggests both halves may need re-architecting around a stronger language→activation training signal, not just more steps. Anthropic's RL Phase 4 is presumably the intended mechanism but is not implemented here.
+- **What is the H5 baseline at 7B scale?** If we could replicate H5 against Anthropic's published Qwen-7B NLA, we'd know whether content-blind projection is a small-model phenomenon or a generic property of the round-trip-cos metric at all scales.
+- **Does a stronger AR alone help?** Training a better AR (e.g., on Haiku persona+audit ar_sft labels — corpus exists at 696 rows) is a feasible local experiment to isolate the contribution of the AR side. Approximately 3-6 GPU-hours on the 4 GB card.
+
+## Eval methodology recommendations for v0.1.0+
+
+1. **Always also report empty-explanation cos as a baseline.** If `cos(AV(v), AR(AV(v))) - cos(AV(v), AR(""))` is near zero, the round-trip cos is not measuring faithfulness regardless of its absolute value.
+2. **Report `unique-templates-per-100-rows` at multiple granularities** (40, 80, 120, 200, full).
+3. **Remove the `[:300]` storage truncation in the result JSON.** Save full per-row explanations.
+4. **Include topic-alignment sanity check.** A simple LLM-judge pass over per-row (source text, AV explanation) pairs gives a faithfulness signal independent of round-trip cos.
+5. **Add the H2 injection-fidelity test as a recurring diagnostic.** A future AV should produce empty under ZERO injection (as v0.0.1 does, which is the correct behavior) but should produce *content-distinguishable* outputs under REAL vs RAND vectors.
+
+## Files and reproducibility
+
+All raw data, scripts, and per-row outputs are committed in `experiments/v8_nla_local/results/`:
+- `round_trip_v0_n50.json` (original 42-row eval; explanations truncated at 300 due to legacy bug, fixed)
+- `h1_h11_results.json` (10 rows × 4 decoding configs; full untruncated explanations)
+- `h2_injection_fidelity_results.json` (10 rows × 3 injection conditions + 3 repeats)
+- `h5_ar_gibberish_results.json` (10 rows × 4 input-text conditions)
+- `h3_analysis.py`, `h1_h11_eval.py`, `h2_injection_fidelity.py`, `h5_ar_gibberish.py` for reproduction

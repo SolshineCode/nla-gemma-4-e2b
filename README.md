@@ -85,22 +85,28 @@ Cos = 0.438 is well below Anthropic's published 7B numbers (~0.7+). This is the 
 
 **Honest failure-rate disclosure.** 16% of attempted eval rows (8 of 50) produced empty AV outputs and were excluded from the cos calculation. That's a real failure mode of the small-model variant at eval time, not a quirk of the held-out set. v0.1.x with the diversified 9-source-family corpus and a longer SFT step budget is the test of whether scale fixes it.
 
-### ⚠ Read this before using v0.0.1 for interpretability work: AV template collapse
+### ⚠ Read this before using v0.0.1 for interpretability work
 
-The cos number above is real, but the v0.0.1 AV exhibits template collapse on the per-row eval. Concrete numbers from the published `round_trip_v0_n50.json`:
+The cos number above is **principally a structural artifact**, not a measurement of explanation faithfulness. A 5-experiment investigation against v0.0.1 (full report in [`ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md`](ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md)) established three load-bearing findings:
 
-- **20 unique full-explanation strings across 42 evaluated rows** (52% exact-duplicate rate)
-- **4 unique opening stems** at the 80-character granularity:
-  - `The text discusses a legal case` (34 / 42 = 81% of rows)
-  - `The text discusses a protest`
-  - `The text discusses a new feature`
-  - `The text discusses a new policy`
-- Every generation hits `max_new_tokens=120` and emits exactly 298-299 characters
-- The opening stem chosen by the AV does NOT reliably match the source text. Example: `doc_00000001` is verifiably *Hillary Clinton at a campaign rally* in Washington Post text. The AV labels it "legal case" anyway, and the matched AR round-trips it to cos 0.37-0.53 across positions.
+**1. The AR is content-blind.** Mean cos by AR input condition on n=10 rows (same target activations as the published eval):
 
-Round-trip cos is a joint AV+AR system metric; the matched AR has learned to map the 4 templates back to broad activation regions, so cos clears the noise floor without faithful per-row explanations. This is documented behavior, not a code defect. See [`ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md`](ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md) for the 5-cause root-cause analysis.
+| AR input | Mean cos | Above 0.30 floor |
+|---|---|---|
+| Real AV-generated explanation | 0.4292 | 10/10 |
+| Random unrelated Wikipedia sentences | 0.4045 | 10/10 |
+| Random nonsense tokens (`"qwop fnar blarp..."`) | 0.4135 | 10/10 |
+| **Empty string** | **0.4051** | **10/10** |
 
-The v0.1.x interim AV trained on the diversified persona+audit corpus shows **55 unique patterns across 97 rows at equivalent cos (0.441)**, which suggests label diversity is the load-bearing variable. The v0.1.0 full release is the test of whether the dissociation closes.
+The "explanation" contributes a mean **+0.024 cos** over feeding the AR nothing at all. About 95% of the published cos number comes from the AR's content-independent projection from any text input toward OpenWebText activation space; about 5% from explanation conditioning. **All four conditions clear the 0.30 noise floor 10/10 times.**
+
+**2. The AV does not condition outputs on the activation's semantic content.** Under greedy decoding, the same 4 opening template stems (`legal case` / `protest` / `new feature` / `new policy`) are emitted regardless of source. Under sampling (temperature 0.7), outputs are 100% lexically unique but **topically wrong**: a Hillary Clinton campaign rally activation produces "future of work" / "merger" / "police investigation" depending on sampling seed. Random gaussian unit vectors injected in place of real activations produce more template variation (7/10 unique) than real activations (6/10). Activation direction matters for empty-vs-content behavior but the mapping to content is essentially arbitrary.
+
+**3. The originally-reported "4 templates / 298-char outputs" finding was partly a storage bug.** `eval_round_trip.py:195` stored `"explanation": explanation[:300]` in the result JSON. The actual model emits 520-605 chars per row under greedy. The prefix is templated, but the suffix variation was hidden by the truncation. The bug is fixed; full per-row outputs from the rerun ship in the source repo at `experiments/v8_nla_local/results/template_collapse_investigation/`.
+
+**Why the failure happened:** the AV saw approximately 12% of its training data once (220 effective rows out of 1,852 at 55 SFT steps × grad-accum 4 × batch 1). The AR was similarly under-trained. The model converged to "produce the trained NLA output form" without learning to condition body content on the injected vector or to use explanation text on the AR side. This is the predicted small-model failure mode under aggressive descope.
+
+The v0.1.x interim AV (trained on diversified persona+audit labels at 200 SFT steps) at equivalent cos (0.441) showed 55 unique full-output patterns vs v0.0.1's 5 — label diversity and training scale are the load-bearing levers. **v0.0.1 is the pipeline release; the trained adapters are an under-resourced baseline.** Wait for v0.1.0 (in progress) or the second-model 7B cloud variant for usable per-row interpretability outputs.
 
 ## What this artifact is and is not
 

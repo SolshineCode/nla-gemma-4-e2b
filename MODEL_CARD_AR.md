@@ -115,9 +115,22 @@ Round-trip cos is the matched AV+AR pair on held-out OpenWebText activations. Th
 
 **Honest failure-rate disclosure.** 16% of attempted eval rows (8 of 50) produced empty AV outputs and were excluded from the cos calculation. The empty-output mode is on the AV side, not this AR, but it is the joint pair's failure rate at eval time. That is a real failure mode of the small-model variant, not a quirk of the eval set. The v0.1.x release with the diversified 9-source-family corpus and a longer SFT step budget is the test of whether scale fixes it.
 
-### ⚠ Read this before using v0.0.1 for interpretability work: AV template collapse
+### ⚠ Read this before using v0.0.1 for interpretability work
 
-The matched v0.0.1 AV that this AR was trained against exhibits template collapse on the per-row eval. Concrete numbers from `results/round_trip_v0_n50.json`: 20 unique full-explanation strings across 42 evaluated rows (52% exact-duplicate rate), 4 opening stems at 80-char granularity, 81% of rows return the same "legal case" template. This AR has learned to map those 4 templates back to broad activation regions, which is why round-trip cos clears the noise floor even when the AV labels (e.g.) a Hillary Clinton campaign rally activation as "legal case". Round-trip cos is a joint AV+AR system metric and does not by itself adjudicate per-row AV faithfulness. Full 5-cause root-cause analysis: `ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md` in the source repo.
+**This AR is content-blind under v0.0.1 training.** A targeted ablation (documented in full in `ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md`) showed:
+
+| AR input on the same target activations | Mean cos | Above 0.30 floor |
+|---|---|---|
+| Real AV-generated explanation | 0.4292 | 10/10 |
+| Random unrelated Wikipedia sentences | 0.4045 | 10/10 |
+| Random nonsense tokens (`"qwop fnar blarp..."`) | 0.4135 | 10/10 |
+| **Empty string** | **0.4051** | **10/10** |
+
+The AR produces nearly the same cos regardless of what text you feed it. The explanation contributes a mean +0.024 cos delta over empty-string input. About 95% of the published joint-pair cos number comes from this AR's content-independent projection toward OpenWebText activation space.
+
+This means: **the round-trip cos 0.438 reported on the matched v0.0.1 pair is principally measuring the AR's structural projection, not explanation faithfulness.** It is not a defect in this AR specifically — both halves of the pair were under-trained (the AR saw roughly the same fraction of its training data as the AV did under SFT). It is a fact about what the joint-pair metric measures at v0.0.1 scale.
+
+**Practical implication:** do not pair this AR with a different-source AV expecting cos to reflect explanation quality; cos will be near 0.40 regardless of what the AV produces. The AR is provided for matched-pair reproduction of the published v0.0.1 numbers and as a baseline for future AR retraining experiments.
 
 ## What this artifact is and is not
 
