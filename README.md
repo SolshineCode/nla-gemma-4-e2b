@@ -1,6 +1,8 @@
 # NLA-Gemma-4-E2B
 
-**First open-source Natural Language Autoencoder (NLA) released independently of Anthropic's NLA team.** Trained end-to-end on a 4 GB consumer GPU. The methodology contribution at small-model scale.
+**First open-source Natural Language Autoencoder (NLA) released independently of Anthropic's NLA team.** Trained end-to-end on a 4 GB consumer GPU. The methodology contribution at small-model scale to democratize NLA research.
+
+<img width="2752" height="1536" alt="Gemini_Generated_Image_gqbm6agqbm6agqbm" src="https://github.com/user-attachments/assets/7c2dbb86-03a2-4fb5-b234-b7645175825a" />
 
 This is the **bundled public release** of the Gemma-4-E2B NLA pair (v0.0.1) plus its labeled training corpora. The full reproducibility chain — corpus extraction, persona+audit labeling, AV+AR SFT, round-trip eval — is in the [source research repo](https://github.com/SolshineCode/deception-nanochat-sae-research).
 
