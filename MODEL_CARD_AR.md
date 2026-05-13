@@ -93,6 +93,10 @@ This is the **first half-precision LoRA AR** of the public NLA family — Anthro
 
 ## Honest performance summary
 
+![Round-trip cos distribution](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1/resolve/main/figures/02_round_trip_cos_distribution_v0_0_1.png)
+
+*Round-trip cosine similarity distribution on 42 held-out activations. Clean unimodal distribution centered at 0.438 ± 0.054. 100% of evaluated rows clear the 0.30 noise-floor threshold. This is a joint-pair metric (this AR + the matched v0.0.1 AV); see the AV card for the matched view.*
+
 | Metric | Value |
 |---|---|
 | Round-trip cosine similarity (mean) | **0.438** ± 0.054 |
@@ -103,9 +107,19 @@ This is the **first half-precision LoRA AR** of the public NLA family — Anthro
 | Min row cos | 0.313 |
 | Max row cos | 0.558 |
 
+![Per-row round-trip scatter](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1/resolve/main/figures/06_per_row_round_trip_scatter.png)
+
+*Per-row round-trip cos for the 42 evaluated rows. Horizontal line at 0.30 is the noise floor. No degenerate rows. Useful for visualizing the spread that the 0.438 ± 0.054 summary collapses.*
+
 Round-trip cos is the matched AV+AR pair on held-out OpenWebText activations. The eval is symmetric: round-trip cos quality is co-determined by both halves of the pair, so this number is the AR's quality marker as much as the AV's.
 
 **Honest failure-rate disclosure.** 16% of attempted eval rows (8 of 50) produced empty AV outputs and were excluded from the cos calculation. The empty-output mode is on the AV side, not this AR, but it is the joint pair's failure rate at eval time. That is a real failure mode of the small-model variant, not a quirk of the eval set. The v0.1.x release with the diversified 9-source-family corpus and a longer SFT step budget is the test of whether scale fixes it.
+
+### Available HF datasets
+
+- [`Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit) — 696-row AR-SFT training corpus, Claude Haiku persona+audit. The exact training dataset this AR was fine-tuned on for the matched v0.0.x persona+audit variant.
+- [`Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-gemini-persona-audit`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-gemini-persona-audit) — 4,734-row AV-SFT diversified training corpus (companion side, for v0.1.x).
+- [`Solshine/gemma-4-e2b-deception-behavior-completions`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-deception-behavior-completions) — 910-row companion deception/behavior corpus.
 
 ## Intended use
 
@@ -158,6 +172,6 @@ Please also cite the upstream NLA methodology:
 
 ## See also
 
-- Source research repo. https://github.com/SolshineCode/deception-nanochat-sae-research
+- Source research repo. `SolshineCode/deception-nanochat-sae-research` — currently private, **available upon request — DM me**.
 - Matched AV. [`Solshine/gemma-4-e2b-nla-L23-av-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1)
 - Companion dataset. [`Solshine/gemma-4-e2b-deception-behavior-completions`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-deception-behavior-completions)

@@ -40,6 +40,8 @@ This is the **methodology-validation small-model variant**. It's NOT a numbers-p
 
 ![Round-trip cos distribution](figures/02_round_trip_cos_distribution_v0_0_1.png)
 
+*Round-trip cosine similarity distribution for the v0.0.1 NLA pair on 42 held-out activations. Clean unimodal distribution centered at 0.438 ± 0.054. 100% of evaluated rows clear the 0.30 noise-floor threshold. No degenerate (near-zero) rows. Min 0.313, max 0.558. The matching n=50 attempted minus 8 empty-output exclusions explains the 42 evaluated. See "Limitations" for the per-row diversity caveat that this single number does not capture.*
+
 | Metric | Value |
 |---|---|
 | Round-trip cosine similarity (mean) | **0.438** ± 0.054 |
@@ -131,6 +133,8 @@ See the `eval_provenance` field in the model's `nla_meta.yaml` sidecar for full 
 
 ![Training loss](figures/01_v0_0_1_training_loss.png)
 
+*Six-panel honest-accuracy training dashboard for the v0.0.1 AV+AR continuation experiment. Each panel shows the same raw loss points with a different smoothing or regression overlay. The bottom-right panel reports the linear-regression slope and R² used to adjudicate the "descending vs flat" verdict (threshold: slope < −0.002/step AND R² ≥ 0.10). This is the tool that caught a real over-claim in the project's own session-8 notes (AR "descending" was honestly flat under these thresholds). Regenerate with `python experiments/v8_nla_local/make_training_dashboard.py --auto` from the source repo.*
+
 The continuation experiment shows the **SFT-saturation diagnostic**. AV training-loss flat at ~1.30 across +40 steps. AV's empty-output rate jumped from 16% to 65% in that window. This is the limit of useful single-epoch SFT on a 2,548-row corpus, not a model-capacity ceiling. The result motivates the **v0.1.0 scaling work** (in progress, corpus growing to ~11K rows across 10 diversified source families).
 
 **Honest-accuracy verdict on the +40 continuation** (linear-regression on raw loss):
@@ -138,15 +142,35 @@ The continuation experiment shows the **SFT-saturation diagnostic**. AV training
 - AV. Slope = −0.0002/step, R² = 0.000. **Flat** (saturation, not descent).
 - AR. Slope = −0.0015/step, R² = 0.061. **Flat** too. High variance, endpoint Δ is mostly noise.
 
-The verdict thresholds we use (per the convention added to `CLAUDE.md`) call a training loss "descending" only when slope < −0.002 AND R² ≥ 0.10. This convention is itself a community contribution. We publish a 6-panel diagnostic dashboard tool alongside the model. See [`make_training_dashboard.py`](https://github.com/SolshineCode/deception-nanochat-sae-research/blob/main/experiments/v8_nla_local/make_training_dashboard.py).
+The verdict thresholds we use (per the convention added to `CLAUDE.md`) call a training loss "descending" only when slope < −0.002 AND R² ≥ 0.10. This convention is itself a community contribution. We publish a 6-panel diagnostic dashboard tool alongside the model: `make_training_dashboard.py` in the source research repo (currently private, **available upon request — DM me**).
 
 It caught a real over-claim in our own prior session notes. The "AR was descending" interpretation of session-8's continuation was honestly flat under these thresholds.
 
-## Companion dataset on this release
+## Companion datasets on this release
 
 ![Corpus source breakdown](figures/03_corpus_source_breakdown.png)
 
-The 910-row consolidated Gemma-4-E2B deception/behavior completions corpus is published as a standalone artifact at [`Solshine/gemma-4-e2b-deception-behavior-completions`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-deception-behavior-completions). It includes 70 financial-deception completions with Claude-Haiku-4-5 verdict labels, plus 840 social-role game scenarios across base and instruct variants at three layers (L10, L17, L25). Useful as Stage-0 input for any downstream small-model NLA, SAE, or interpretability work.
+*Source-family breakdown of the v0.1.x diversified training corpus (4,734 rows). The 9-family mix is deliberate: alongside web text (FineWeb-Edu, Wikipedia, arXiv), the corpus reaches into alignment-relevant text (Anthropic safety datasets, in-repo Gemma-4-E2B deception completions, PKU-SafeRLHF) so a downstream NLA can pick up deception-relevant cues, not just generic OpenWebText semantics.*
+
+![Per-row round-trip scatter](figures/06_per_row_round_trip_scatter.png)
+
+*Per-row round-trip cos for the 42 evaluated rows (v0.0.1, n=50 attempted, 8 empty-output exclusions). The horizontal line at 0.30 is the noise floor; 100% of evaluated rows clear it. Min 0.313, max 0.558.*
+
+![v0.0.1 vs v0.1.0 interim](figures/05_cos_comparison_v0_0_1_vs_v0_1_0_interim.png)
+
+*Headline cos comparison. v0.0.1 (n=42) at 0.438 ± 0.054 vs v0.1.x interim AV (n=97) at 0.441 ± 0.052. The interim was trained on the diversified persona+audit corpus at only 200 SFT steps and 52% of the eventual v0.1.0 target corpus; corpus scaling alone at that step count produced +0.003 cos (within either run's std). This is what motivated the "label diversity is the load-bearing variable, not SFT steps alone" reading documented in Limitations below.*
+
+![Label word-count distribution](figures/04_label_word_count_distribution.png)
+
+*Label word-count distribution for the v0.1.x persona+audit corpus vs the v0.0.x baseline gpt-4o-mini labels. The persona+audit pipeline (Dr Chen labeler + Dr Otsuka auditor) produces tighter, more uniform label lengths. The label-quality improvement did not translate to round-trip cos gain at this corpus scale, but the underlying label artifact is independently useful for cross-labeler comparison studies.*
+
+### Available HF datasets
+
+This v0.0.1 release ships alongside three published HuggingFace datasets:
+
+- [`Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit) — 696-row AR-SFT training corpus, Claude Haiku persona+audit
+- [`Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-gemini-persona-audit`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-gemini-persona-audit) — 4,734-row AV-SFT diversified training corpus, Gemini persona+audit, 9 source families
+- [`Solshine/gemma-4-e2b-deception-behavior-completions`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-deception-behavior-completions) — 910-row companion deception/behavior corpus. 70 financial-deception completions with Claude-Haiku-4-5 verdict labels plus 840 social-role scenarios across base and instruct variants at three layers (L10, L17, L25). Useful as Stage-0 input for any downstream small-model NLA, SAE, or interpretability work.
 
 ## Intended use
 
@@ -204,7 +228,7 @@ This release follows Anthropic's NLA methodology exactly, descoped for consumer-
 
 ## See also
 
-- Source research repo (full reproducibility chain). https://github.com/SolshineCode/deception-nanochat-sae-research
+- Source research repo (full reproducibility chain). `SolshineCode/deception-nanochat-sae-research` — currently private, **available upon request — DM me**.
 - Realistic-path roadmap (v0.1.0 to v0.2.0 to v1.0). `notes/V8_ANTHROPIC_GRADE_PATH_2026-05-11.md` in the source repo
 - Honest-accuracy training-trend convention. See `CLAUDE.md` Research Interpretation Guardrails section
 - Companion dataset. [`Solshine/gemma-4-e2b-deception-behavior-completions`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-deception-behavior-completions)
