@@ -47,9 +47,7 @@ This is the **bundled public release** of the Gemma-4-E2B NLA pair (v0.0.1) plus
 
 ---
 
-## Why AV and AR are published as separate HuggingFace repos
-
-This is the HF convention. Each `repo_id` is a single model. Anthropic's `kitft` team publishes their AV and AR halves the same way (one repo each, cross-linked in READMEs). The pair is logically one artifact for the round-trip eval, but the file layout is two adapters + one linear head + matched sidecars. The READMEs cross-reference each other, and this `nla-gemma-4-e2b` repo is the single landing page that points to both halves.
+AV and AR are published as separate HuggingFace repos. This is the HF convention. Each `repo_id` is a single model. Anthropic's `kitft` team publishes their AV and AR halves the same way (one repo each, cross-linked in READMEs). The pair is logically one artifact for the round-trip eval, but the file layout is two adapters + one linear head + matched sidecars. The READMEs cross-reference each other, and this `nla-gemma-4-e2b` repo is the single landing page that points to both halves.
 
 If you want both in one place: clone the two HF repos with `git lfs install && git clone https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1 && git clone https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1`. Both fit on consumer hardware.
 
