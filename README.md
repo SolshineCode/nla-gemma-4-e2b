@@ -4,7 +4,9 @@
 
 <img width="2752" height="1536" alt="Gemini_Generated_Image_gqbm6agqbm6agqbm" src="https://github.com/user-attachments/assets/7c2dbb86-03a2-4fb5-b234-b7645175825a" />
 
-This is the **bundled public release** of the Gemma-4-E2B NLA pair (v0.0.1) plus its labeled training corpora. The full reproducibility chain (corpus extraction, persona+audit labeling, AV+AR SFT, round-trip eval) is in the source research repo `SolshineCode/deception-nanochat-sae-research` — currently private, **available upon request — DM me**.
+This is the **bundled public release** of the Gemma-4-E2B NLA pair (v0.0.2) plus its labeled training corpora. The full reproducibility chain (corpus extraction, persona+audit labeling, AV+AR SFT, round-trip eval) is in the source research repo `SolshineCode/deception-nanochat-sae-research` — currently private, **available upon request — DM me**.
+
+> **Hardware-constraint disclosure.** This release was pushed to the limit of what a single 4 GB consumer GPU (NVIDIA GTX 1650 Ti Max-Q) can practically train. The under-trained AV (55 SFT steps, ~12% effective data exposure) and content-blind AR documented below are the predicted small-model failure modes at this compute budget. The pipeline, infrastructure, and methodology descope are independently useful, but the **trained adapter quality is bounded by the chosen hardware**. A faithful NLA at this methodology requires either (a) a larger consumer GPU with more headroom for SFT steps × corpus rows × effective batch, or (b) rented cloud GPU (~$30-50 of A100 time per the `cloud_gpu_setup_notes.md` plan). v0.0.2 is the **best honest artifact achievable on the chosen hardware**; v0.1.0 and a second-model 7B variant are in the queue.
 
 ---
 
