@@ -18,6 +18,7 @@ This is the **bundled public release** of the Gemma-4-E2B NLA pair (v0.0.2) plus
 - **Full reproducibility chain.** Corpus to labels to SFT to eval is single-command runnable. Every prompt versioned with SHA-256.
 - **Multi-labeler training corpus.** Per-row `labeler_model` provenance across Claude Haiku and Gemini CLI labelers, with a persona+audit pipeline (Dr. Marisol Chen labeler + Dr. Riley Otsuka auditor) replacing the bare gpt-4o-mini convention.
 - **Honest-accuracy training-trend convention.** A 6-panel dashboard tool plus regression-based "descending vs flat" thresholds (slope < −0.002/step AND R² ≥ 0.10).
+- **AR/VR Training achieved via LoRA.**
 
 ---
 
