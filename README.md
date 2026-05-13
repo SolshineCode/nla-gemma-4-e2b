@@ -85,7 +85,41 @@ Cos = 0.438 is well below Anthropic's published 7B numbers (~0.7+). This is the 
 
 **Honest failure-rate disclosure.** 16% of attempted eval rows (8 of 50) produced empty AV outputs and were excluded from the cos calculation. That's a real failure mode of the small-model variant at eval time, not a quirk of the held-out set. v0.1.x with the diversified 9-source-family corpus and a longer SFT step budget is the test of whether scale fixes it.
 
-**Note on per-row explanation diversity.** Round-trip cos and per-row explanation faithfulness are dissociable. Qualitative inspection of the v0.0.1 AV's 42 per-row outputs shows convergence toward ~4 explanation templates across the eval set; the v0.1.x interim AV (trained on diversified persona+audit labels) shows 55 unique patterns across 97 rows at equivalent cos (0.441). This suggests label diversity, not SFT step count, is the load-bearing variable. Future versions will report a "unique-templates-per-100-rows" metric alongside cos so both axes are visible separately. The full per-row eval JSON is shipped in the source repo for direct audit.
+### ⚠ Read this before using v0.0.1 for interpretability work: AV template collapse
+
+The cos number above is real, but the v0.0.1 AV exhibits template collapse on the per-row eval. Concrete numbers from the published `round_trip_v0_n50.json`:
+
+- **20 unique full-explanation strings across 42 evaluated rows** (52% exact-duplicate rate)
+- **4 unique opening stems** at the 80-character granularity:
+  - `The text discusses a legal case` (34 / 42 = 81% of rows)
+  - `The text discusses a protest`
+  - `The text discusses a new feature`
+  - `The text discusses a new policy`
+- Every generation hits `max_new_tokens=120` and emits exactly 298-299 characters
+- The opening stem chosen by the AV does NOT reliably match the source text. Example: `doc_00000001` is verifiably *Hillary Clinton at a campaign rally* in Washington Post text. The AV labels it "legal case" anyway, and the matched AR round-trips it to cos 0.37-0.53 across positions.
+
+Round-trip cos is a joint AV+AR system metric; the matched AR has learned to map the 4 templates back to broad activation regions, so cos clears the noise floor without faithful per-row explanations. This is documented behavior, not a code defect. See [`ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md`](ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md) for the 5-cause root-cause analysis.
+
+The v0.1.x interim AV trained on the diversified persona+audit corpus shows **55 unique patterns across 97 rows at equivalent cos (0.441)**, which suggests label diversity is the load-bearing variable. The v0.1.0 full release is the test of whether the dissociation closes.
+
+## What this artifact is and is not
+
+**v0.0.1 is most useful for:**
+
+- ✅ **Methodology replication** — the full pipeline runs end-to-end on a 4 GB consumer GPU
+- ✅ **Baseline for v0.1.x scaling experiments** — already informative (4 templates v0.0.1 vs 55 templates v0.1.x interim at equivalent cos)
+- ✅ **Infrastructure starting point** — multi-labeler pipeline, persona+audit prompts, restart-safe chunked output, honest-accuracy training-trend convention are all independently reusable
+- ✅ **The published HF datasets** are useful as Stage-0 inputs to anyone else's NLA, SAE, or interpretability work
+- ✅ **The descope choices** (NF4+LoRA, forward-hook injection, AR truncation) are documented and reusable
+
+**v0.0.1 is NOT yet useful for:**
+
+- ❌ **Per-row activation interpretation** — "what does THIS activation mean?" gets you one of 4 templates, not a faithful description
+- ❌ **Cross-activation comparison** — bucketing 4 ways carries near-zero information for differentiating activations
+- ❌ **Downstream classifier feature** — 4-bucket label space gives a classifier almost no signal
+- ❌ **A faithfulness certificate for some other NLA you're evaluating** — cos and per-row faithfulness are dissociable per our finding; cos alone is not sufficient
+
+For per-row faithful explanations, wait for v0.1.0 (in progress, ~3-6 weeks ETA) or the second-model 7B variant. v0.0.1 is the smallest honest variant of the methodology, not a deployable interpretability tool.
 
 ## Training & corpus figures
 

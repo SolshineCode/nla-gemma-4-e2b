@@ -225,7 +225,15 @@ def main() -> int:
     print(f"Round-trip cosine similarity: {cos:.4f}")
     print(f"  - above 0.30 noise floor: {'YES' if cos > 0.30 else 'NO'}")
     print(f"  - v0.0.1 published mean on n=42: 0.438")
-    print(f"  - note: per-row cos is variable; do not over-interpret a single sample. See model card.")
+    print()
+    print("READ THIS BEFORE INTERPRETING THE RESULT:")
+    print("  At v0.0.1 scale, the AV converges to ~20 unique strings across our 42-row eval,")
+    print("  4 opening genre stems (legal case / protest / new feature / new policy), 52%")
+    print("  exact-duplicate rate. The explanation above is likely one of those templates")
+    print("  rather than a faithful per-row description of YOUR activation. Round-trip cos")
+    print("  is the pair's system-level closure, not a per-row interpretability claim.")
+    print("  See the 'AV template collapse' section of the model card and the full")
+    print("  ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md write-up.")
     return 0
 
 

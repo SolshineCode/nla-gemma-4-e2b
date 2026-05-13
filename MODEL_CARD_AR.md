@@ -115,6 +115,25 @@ Round-trip cos is the matched AV+AR pair on held-out OpenWebText activations. Th
 
 **Honest failure-rate disclosure.** 16% of attempted eval rows (8 of 50) produced empty AV outputs and were excluded from the cos calculation. The empty-output mode is on the AV side, not this AR, but it is the joint pair's failure rate at eval time. That is a real failure mode of the small-model variant, not a quirk of the eval set. The v0.1.x release with the diversified 9-source-family corpus and a longer SFT step budget is the test of whether scale fixes it.
 
+### ⚠ Read this before using v0.0.1 for interpretability work: AV template collapse
+
+The matched v0.0.1 AV that this AR was trained against exhibits template collapse on the per-row eval. Concrete numbers from `results/round_trip_v0_n50.json`: 20 unique full-explanation strings across 42 evaluated rows (52% exact-duplicate rate), 4 opening stems at 80-char granularity, 81% of rows return the same "legal case" template. This AR has learned to map those 4 templates back to broad activation regions, which is why round-trip cos clears the noise floor even when the AV labels (e.g.) a Hillary Clinton campaign rally activation as "legal case". Round-trip cos is a joint AV+AR system metric and does not by itself adjudicate per-row AV faithfulness. Full 5-cause root-cause analysis: `ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md` in the source repo.
+
+## What this artifact is and is not
+
+**The v0.0.1 AR is most useful for:**
+
+- ✅ **Pairing with the matched v0.0.1 AV** for round-trip eval and replication of the methodology pipeline
+- ✅ **Activation reconstruction from text** at the noise-floor-clearing cos level
+- ✅ **Baseline for v0.1.0 AR scaling experiments** when the matched diversified v0.1.x AV lands
+- ✅ **Stage-0 input to cross-AR ablation studies** in the consumer-GPU regime
+
+**The v0.0.1 AR is NOT yet useful for:**
+
+- ❌ **Pairing with arbitrary third-party AV checkpoints** — has not been validated outside the matched v0.0.1 pair
+- ❌ **Certifying per-row faithfulness** — round-trip cos is a joint-pair metric and does not on its own adjudicate per-row AV explanation quality (per the template-collapse finding above)
+- ❌ **Reconstructing activations from explanations that are wildly different from the 4 training-time stems** — performance on out-of-distribution AV outputs is unknown
+
 ### Available HF datasets
 
 - [`Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit) — 696-row AR-SFT training corpus, Claude Haiku persona+audit. The exact training dataset this AR was fine-tuned on for the matched v0.0.x persona+audit variant.
@@ -131,7 +150,7 @@ Round-trip cos is the matched AV+AR pair on held-out OpenWebText activations. Th
 ## Limitations
 
 - Pair with the matched v0.0.1 AV. Mixing this AR with a third-party AV has not been validated.
-- Round-trip cos at the joint pair's level is symmetric: a comparable cos can be obtained from AV templates of varying per-row diversity, so cos alone does not adjudicate AV explanation faithfulness. Qualitative inspection of v0.0.1 AV outputs shows convergence toward a small set of explanation templates. Future releases will report per-row template diversity alongside cos.
+- Round-trip cos at the joint pair's level is symmetric: a comparable cos can be obtained from AV templates of varying per-row diversity, so cos alone does not adjudicate AV explanation faithfulness. The matched v0.0.1 AV shows 20 unique full-explanation strings across 42 rows (52% exact-duplicate rate) and 4 opening template stems; full root-cause analysis in `ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md`. Future releases will report per-row template diversity alongside cos.
 - Training corpus is OpenWebText-only. v0.1.0 with diversified labels across 10 source families is in progress.
 - Round-trip cos = 0.438 is below Anthropic's published 7B numbers (~0.7+). Use for methodology replication, not absolute performance matching.
 - Linear(1536, 1536) head is loaded separately from the LoRA adapter (`linear_head.pt`).
@@ -150,7 +169,9 @@ base = AutoModelForCausalLM.from_pretrained("google/gemma-4-E2B", quantization_c
 ar = PeftModel.from_pretrained(base, "Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1")
 tok = AutoTokenizer.from_pretrained("google/gemma-4-E2B")
 linear_head_state = torch.load("linear_head.pt")  # download separately from this repo
-# ... see inference example in the source repo's experiments/v8_nla_local/eval_round_trip.py
+# For a complete, self-contained round-trip inference example,
+# see `examples/round_trip_example.py` in the public bundled release:
+# https://github.com/SolshineCode/nla-gemma-4-e2b
 ```
 
 ## Citation

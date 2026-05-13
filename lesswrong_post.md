@@ -52,7 +52,18 @@ Round-trip cosine similarity is **0.438 ± 0.054** on n=42 held-out activations 
 
 But the n=42 hides two things I want to be explicit about. First: the eval started with 50 attempted rows; **8 of them (16%) produced empty AV outputs and were excluded.** That's a real failure mode of the small-model variant at eval time, not a quirk of the held-out set. The v0.1.x release with the diversified 9-source-family corpus and a longer SFT step budget is the test of whether scale fixes it. If it doesn't, the empty-output rate becomes the load-bearing limitation of the consumer-GPU NLA path and we will say so plainly.
 
-Second: **per-row explanation diversity at this SFT scale is lower than I'd like.** Qualitative inspection of the 42 per-row outputs shows the v0.0.1 AV converges toward ~4 explanation templates across the eval set. Round-trip cos is symmetric, so a template-collapsed AV paired with a matched template-permissive AR can produce a respectable cos even when individual explanations are not strongly source-specific. The v0.1.x interim AV trained on diversified persona+audit labels shows substantially higher per-row template variety (55 unique patterns across 97 rows) at equivalent cos (0.441). I read this as evidence that label diversity, not SFT step count, is the load-bearing variable for explanation faithfulness at this corpus scale. Future versions will report a "unique-templates-per-100-rows" metric alongside cos so the two axes are visible separately. The full per-row eval JSON ships in the source repo so anyone can audit the diversity claim directly.
+Second, and this is the bigger problem: **the v0.0.1 AV exhibits template collapse on the per-row eval.** Concrete numbers from the published `round_trip_v0_n50.json`:
+
+- 20 unique full-explanation strings across 42 evaluated rows (52% exact-duplicate rate)
+- 4 unique opening stems at 80-character granularity (`legal case`, `protest`, `new feature`, `new policy`)
+- 81% of rows return the `legal case` stem regardless of what the source activation actually represents
+- `doc_00000001` is verifiably Hillary Clinton at a campaign rally in Washington Post text. The AV labels it `legal case` anyway and the matched AR round-trips it to cos 0.37-0.53 across positions.
+
+Round-trip cos is a joint AV+AR system metric. The matched AR has learned to map the 4 templates back to broad activation regions, so cos clears the noise floor even when the AV's explanation does not describe the activation. This is the predicted small-model under-training failure mode. Full 5-cause root-cause analysis (under-trained AV, low-diversity gpt-4o-mini labels, no SFT diversity penalty, joint-pair cos eval blindness, OpenWebText homogeneity) lives in `ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md` in the source repo.
+
+The v0.1.x interim AV (trained on diversified persona+audit Gemini labels) at equivalent cos (0.441) shows 55 unique patterns across 97 rows. That is a 14× per-row diversity gain at the same round-trip cos, the strongest empirical signal we have for which lever matters: label diversity, not SFT step count alone. The v0.1.0 full release is the test of whether the dissociation closes.
+
+What this means practically: **v0.0.1 is methodology infrastructure plus an under-trained baseline. It is not a usable per-row interpretability tool at this scale.** The model card has a full "What this artifact is and is not" section that spells out the YES / NO use cases.
 
 That's well below Anthropic's published 7B numbers (which run in the 0.7+ range), and we say so explicitly in the model card. The point of the release is methodology validation at small-model scale, not parity on the absolute numbers.
 
@@ -188,6 +199,7 @@ Kit Fraser-Taliente, if you read this, thanks for publishing the NLA methodology
 | Realistic-path roadmap | `notes/V8_ANTHROPIC_GRADE_PATH_2026-05-11.md` (in the source repo, DM for access) |
 | Training dashboard tool | `experiments/v8_nla_local/make_training_dashboard.py` (in the source repo, DM for access) |
 | Honest-accuracy convention | `CLAUDE.md` Research Interpretation Guardrails section (in the source repo, DM for access) |
+| Root-causes hypothesis | `ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md` (in the bundled release repo) |
 
 If you want to try this on your own consumer GPU, clone `SolshineCode/nla-gemma-4-e2b` and run `python examples/smoke_test.py` (3-5 min, validates env + adapters) or `python examples/round_trip_example.py "your text here"` (live inference on your own input). Both are fully self-contained — no source-repo access needed. For the full training pipeline (~6 GPU-hours, ~$0.50 spend), DM for source repo access.
 

@@ -54,6 +54,44 @@ This is the **methodology-validation small-model variant**. It's NOT a numbers-p
 
 **Honest failure-rate disclosure.** 16% of attempted eval rows (8 of 50) produced empty AV outputs and were excluded from the cos calculation. That is a real failure mode of the small-model variant, not a quirk of the eval set. The v0.1.x release with the diversified 9-source-family corpus and a longer SFT step budget is the test of whether scale fixes it.
 
+### ⚠ Read this before using v0.0.1 for interpretability work: AV template collapse
+
+The cos number above is real, but the v0.0.1 AV exhibits template collapse on the per-row eval. Concrete numbers from `results/round_trip_v0_n50.json`:
+
+- **20 unique full-explanation strings across 42 evaluated rows** (52% exact-duplicate rate)
+- **4 unique opening stems** at the 80-character granularity:
+  - `The text discusses a legal case` (34 / 42 = 81% of rows)
+  - `The text discusses a protest`
+  - `The text discusses a new feature`
+  - `The text discusses a new policy`
+- Every generation hits `max_new_tokens=120` and emits exactly 298-299 characters
+- The opening stem chosen by the AV does NOT reliably match the source text. Example: `doc_00000001` is verifiably *Hillary Clinton at a campaign rally* in Washington Post text. The AV labels it "legal case" anyway, and the matched AR round-trips it to cos 0.37-0.53 across positions.
+
+Round-trip cos is a joint AV+AR system metric; the matched AR has learned to map the 4 templates back to broad activation regions, so cos clears the noise floor without faithful per-row explanations. This is documented behavior, not a code defect. See `ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md` in the source repo for the 5-cause root-cause analysis.
+
+The v0.1.x interim AV trained on the diversified persona+audit corpus shows **55 unique patterns across 97 rows at equivalent cos (0.441)**, which suggests label diversity is the load-bearing variable. The v0.1.0 full release is the test of whether the dissociation closes.
+
+## What this artifact is and is not
+
+**v0.0.1 is most useful for:**
+
+- ✅ **Methodology replication** — the full pipeline runs end-to-end on a 4 GB consumer GPU
+- ✅ **Baseline for v0.1.x scaling experiments** — already informative (4 templates v0.0.1 vs 55 templates v0.1.x interim at equivalent cos)
+- ✅ **Infrastructure starting point** — multi-labeler pipeline, persona+audit prompts, restart-safe chunked output, honest-accuracy training-trend convention are all independently reusable
+- ✅ **The published HF datasets** are useful as Stage-0 inputs to anyone else's NLA, SAE, or interpretability work
+- ✅ **The descope choices** (NF4+LoRA, forward-hook injection, AR truncation) are documented and reusable
+
+**v0.0.1 is NOT yet useful for:**
+
+- ❌ **Per-row activation interpretation** — "what does THIS activation mean?" gets you one of 4 templates, not a faithful description
+- ❌ **Cross-activation comparison** — bucketing 4 ways carries near-zero information for differentiating activations
+- ❌ **Downstream classifier feature** — 4-bucket label space gives a classifier almost no signal
+- ❌ **A faithfulness certificate for some other NLA you're evaluating** — cos and per-row faithfulness are dissociable per our finding; cos alone is not sufficient
+
+For per-row faithful explanations, wait for v0.1.0 (in progress, ~3-6 weeks ETA) or the second-model 7B variant. v0.0.1 is the smallest honest variant of the methodology, not a deployable interpretability tool.
+
+---
+
 See the `eval_provenance` field in the model's `nla_meta.yaml` sidecar for full reproducibility: results-JSON path, parquet SHA-256, commit SHA, paired-with-checkpoint reference, and inline headline numbers (per the eval-provenance convention introduced in our research repo).
 
 ## Architecture and training
@@ -183,7 +221,7 @@ This v0.0.1 release ships alongside three published HuggingFace datasets:
 ## Limitations and honest framing
 
 - **Cos = 0.438 is far below Anthropic's published 7B numbers (~0.7+).** Use this artifact for methodology replication, not for matching their absolute performance.
-- **Per-row explanation diversity is low at this SFT scale.** Qualitative inspection of the n=42 eval per-row outputs shows the v0.0.1 AV converges toward a small set of explanation templates (~4 patterns across the eval set) that the matched v0.0.1 AR has learned to round-trip into the correct activation region. Round-trip cos and per-row faithfulness are dissociable: a comparable cos can be obtained from a more template-collapsed AV paired with a permissive AR. The v0.1.x interim AV trained on diversified persona+audit labels shows substantially higher per-row template variety (55 unique patterns across 97 rows) at equivalent cos (0.441), which suggests label diversity rather than SFT step count is the load-bearing variable here. Future releases will report a "unique-templates-per-100-rows" metric alongside cos so the two axes are visible separately.
+- **Per-row explanation diversity is low at this SFT scale (template collapse).** Concrete: 20 unique full-explanation strings across 42 evaluated rows, 52% exact-duplicate rate, 4 opening stems at 80-char granularity, 81% of rows return the same "legal case" template stem. Round-trip cos and per-row faithfulness are dissociable: cos clears the noise floor even when the AV labels a Hillary Clinton campaign rally activation with the "legal case" template stem. Full root-cause analysis (5 contributing causes including under-trained AV, low-diversity labels, no SFT diversity penalty, joint-pair-cos eval blindness, and OpenWebText homogeneity) lives in `ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md` in the source repo. The v0.1.x interim AV at equivalent cos (0.441) shows 55 unique patterns across 97 rows, supporting the hypothesis that label diversity (not SFT step count alone) is the load-bearing lever.
 - **Pair with the matched v0.0.1 AR** for round-trip eval. Mixing this AV with a third-party AR has not been validated.
 - **Training corpus is OpenWebText-only.** We have an in-progress v0.1.0 release with diversified labels across 10 source families (FineWeb-Edu, Wikipedia, arXiv, in-repo Gemma-4-E2B deception completions, PKU-SafeRLHF, Anthropic/discrim-eval, Anthropic/persuasion, CAI harmless, Anthropic/llm_global_opinions) but v0.1.0 is not yet ready for HF release. Corpus is only 52% labeled at this writing.
 - **No GRPO RL Phase 4** (Anthropic's v0.2.0-equivalent). On 4 GB hardware this Phase may not fit. It's under investigation.
@@ -202,7 +240,10 @@ base = AutoModelForCausalLM.from_pretrained("google/gemma-4-E2B", quantization_c
                                               device_map={"": torch.cuda.current_device()})
 av = PeftModel.from_pretrained(base, "Solshine/gemma-4-e2b-nla-L23-av-v0_0_1")
 tok = AutoTokenizer.from_pretrained("google/gemma-4-E2B")
-# ... see inference example in the source repo's experiments/v8_nla_local/eval_round_trip.py
+# For a complete, self-contained inference example that takes your own text,
+# extracts an L23 activation, runs the AV+AR round-trip, and prints cos,
+# see `examples/round_trip_example.py` in the public bundled release:
+# https://github.com/SolshineCode/nla-gemma-4-e2b
 ```
 
 ## Citation
