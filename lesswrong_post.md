@@ -16,7 +16,7 @@ I trained a small-model variant on a **4 GB GTX 1650 Ti Max-Q laptop**. It follo
 - **AR-SFT training dataset (Claude Haiku persona+audit, 696 rows)**: [`Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit)
 - **AV-SFT diversified training dataset (Gemini persona+audit, 4,734 rows)**: [`Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-gemini-persona-audit`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-gemini-persona-audit)
 - **Companion deception dataset**: [`Solshine/gemma-4-e2b-deception-behavior-completions`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-deception-behavior-completions)
-- **Source repo (full reproducibility chain)**: https://github.com/SolshineCode/deception-nanochat-sae-research
+- **Source repo (full reproducibility chain)**: `SolshineCode/deception-nanochat-sae-research` — currently private, **available upon request — DM me**
 
 Honest framing up front. This is NOT a numbers-parity release with Anthropic's 7B+ variants. Round-trip cos is **0.438** ± 0.054, not their 0.7+. What this release contributes is the descope-and-democratize side of the work, plus the full reproducibility chain that lets anyone with a consumer GPU actually run NLA-style interpretability now.
 
@@ -46,7 +46,7 @@ It uses 4 GB VRAM (NF4 4-bit base plus LoRA r=64 adapters), trains in about 3 ho
 
 ### 3. Honest small-model framing
 
-![Round-trip cosine distribution](https://github.com/SolshineCode/deception-nanochat-sae-research/raw/main/experiments/v8_nla_local/release/v0_0_1/figures/02_round_trip_cos_distribution_v0_0_1.png)
+![Round-trip cosine distribution](https://raw.githubusercontent.com/SolshineCode/nla-gemma-4-e2b/main/figures/02_round_trip_cos_distribution_v0_0_1.png)
 
 Round-trip cosine similarity is **0.438 ± 0.054** on n=42 held-out activations from OpenWebText. 100% of evaluated rows clear the 0.30 noise-floor threshold. The distribution is clean and unimodal. No degenerate rows. Min cos = 0.313, max = 0.558.
 
@@ -64,15 +64,15 @@ Every prompt is versioned with its SHA-256. The gpt-4o-mini labeling INSTRUCTION
 
 When training loss looks like it descends, how do you tell descending from noisy-flat? A 6-panel multi-perspective dashboard answers this:
 
-![Training trajectory honest verdict](https://github.com/SolshineCode/deception-nanochat-sae-research/raw/main/experiments/v8_nla_local/release/v0_0_1/figures/01_v0_0_1_training_loss.png)
+![Training trajectory honest verdict](https://raw.githubusercontent.com/SolshineCode/nla-gemma-4-e2b/main/figures/01_v0_0_1_training_loss.png)
 
-The convention we settled on is to call a training loss "descending" only when linear-regression on the raw (un-smoothed) loss points has slope < −0.002/step AND R² ≥ 0.10. The convention is open-source (now in our `CLAUDE.md`) and the visualization tool ([`make_training_dashboard.py`](https://github.com/SolshineCode/deception-nanochat-sae-research/blob/main/experiments/v8_nla_local/make_training_dashboard.py)) ships with the release.
+The convention we settled on is to call a training loss "descending" only when linear-regression on the raw (un-smoothed) loss points has slope < −0.002/step AND R² ≥ 0.10. The convention is open-source (now in our `CLAUDE.md`) and the visualization tool `make_training_dashboard.py` ships with the release in the source repo (currently private, **available upon request — DM me**).
 
 It caught a real over-claim in our own prior session notes. The "AR was descending" reading of session-8's continuation was honestly flat under these thresholds. Future training runs should pass through the regression panel before any "descending" claim makes it into papers or commit messages.
 
 ### 6. Companion dataset released independently
 
-![Corpus source breakdown](https://github.com/SolshineCode/deception-nanochat-sae-research/raw/main/experiments/v8_nla_local/release/v0_0_1/figures/03_corpus_source_breakdown.png)
+![Corpus source breakdown](https://raw.githubusercontent.com/SolshineCode/nla-gemma-4-e2b/main/figures/03_corpus_source_breakdown.png)
 
 The 910-row Gemma-4-E2B deception/behavior completions corpus is published as a standalone artifact at [`Solshine/gemma-4-e2b-deception-behavior-completions`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-deception-behavior-completions). It has 70 financial-deception completions with Claude-Haiku-4-5 verdict labels, plus 840 social-role scenarios across base and instruct variants at three layers (L10, L17, L25). Useful as Stage-0 input for any downstream small-model NLA, SAE, or interpretability work.
 
@@ -146,11 +146,11 @@ This is the SFT-saturation diagnostic. Labeled-data ceiling at 2,548 rows, not m
 
 I also tried a v0.1.0 interim AV trained on 3,480 rows across 7 diversified source families with persona+audit labels (Dr. Marisol Chen labeler plus Dr. Riley Otsuka auditor pipeline). Round-trip eval n=97 gave cos = 0.441. A **+0.003 Δ vs v0.0.1's 0.438**. Within the std of either run.
 
-![v0.0.1 vs v0.1.0 interim](https://github.com/SolshineCode/deception-nanochat-sae-research/raw/main/experiments/v8_nla_local/release/v0_0_1/figures/05_cos_comparison_v0_0_1_vs_v0_1_0_interim.png)
+![v0.0.1 vs v0.1.0 interim](https://raw.githubusercontent.com/SolshineCode/nla-gemma-4-e2b/main/figures/05_cos_comparison_v0_0_1_vs_v0_1_0_interim.png)
 
 The honest verdict here is that corpus scaling alone at 52%-of-target plus 200/5000 SFT steps did NOT meaningfully exceed v0.0.1. The persona+audit labels DID measurably improve label quality (tighter word counts, sharper feature-attribution phrasings):
 
-![Label word-count distribution](https://github.com/SolshineCode/deception-nanochat-sae-research/raw/main/experiments/v8_nla_local/release/v0_0_1/figures/04_label_word_count_distribution.png)
+![Label word-count distribution](https://raw.githubusercontent.com/SolshineCode/nla-gemma-4-e2b/main/figures/04_label_word_count_distribution.png)
 
 But at this corpus scale, that label-quality improvement didn't translate to round-trip cos gain. The v0.1.0 publishable artifact awaits (a) watchdog completion of the full ~6,750 av_sft + 2,036 ar_sft labels and (b) a full SFT retrain at 3,000-5,000 steps on the complete corpus.
 
@@ -183,12 +183,13 @@ Kit Fraser-Taliente, if you read this, thanks for publishing the NLA methodology
 | Bundled release | [SolshineCode/nla-gemma-4-e2b](https://github.com/SolshineCode/nla-gemma-4-e2b) |
 | Models on HF | [Solshine/gemma-4-e2b-nla-L23-av-v0_0_1](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1) and [-ar-v0_0_1](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1) |
 | Dataset on HF | [Solshine/gemma-4-e2b-deception-behavior-completions](https://huggingface.co/datasets/Solshine/gemma-4-e2b-deception-behavior-completions) |
-| Source repo | https://github.com/SolshineCode/deception-nanochat-sae-research |
-| Realistic-path roadmap | [notes/V8_ANTHROPIC_GRADE_PATH_2026-05-11.md](https://github.com/SolshineCode/deception-nanochat-sae-research/blob/main/notes/V8_ANTHROPIC_GRADE_PATH_2026-05-11.md) |
-| Training dashboard tool | [experiments/v8_nla_local/make_training_dashboard.py](https://github.com/SolshineCode/deception-nanochat-sae-research/blob/main/experiments/v8_nla_local/make_training_dashboard.py) |
-| Honest-accuracy convention | `CLAUDE.md` Research Interpretation Guardrails section |
+| Smoke-eval dataset on HF | [Solshine/gemma-4-e2b-nla-eval-smoke](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-eval-smoke) |
+| Source repo | `SolshineCode/deception-nanochat-sae-research` — currently private, available upon request — DM me |
+| Realistic-path roadmap | `notes/V8_ANTHROPIC_GRADE_PATH_2026-05-11.md` (in the source repo, DM for access) |
+| Training dashboard tool | `experiments/v8_nla_local/make_training_dashboard.py` (in the source repo, DM for access) |
+| Honest-accuracy convention | `CLAUDE.md` Research Interpretation Guardrails section (in the source repo, DM for access) |
 
-If you want to try this on your own consumer GPU, clone the repo and follow `experiments/v8_nla_local/PLAN.md`. The end-to-end pipeline runs in ~6 hours of total GPU time on a 4 GB card (1.5h data gen, 3h AV SFT, 1.5h AR SFT). Cost is $0 (uses local Gemini CLI for labeling under Caleb's subscription, or ~$0.50 OpenAI gpt-4o-mini fallback).
+If you want to try this on your own consumer GPU, clone `SolshineCode/nla-gemma-4-e2b` and run `python examples/smoke_test.py` (3-5 min, validates env + adapters) or `python examples/round_trip_example.py "your text here"` (live inference on your own input). Both are fully self-contained — no source-repo access needed. For the full training pipeline (~6 GPU-hours, ~$0.50 spend), DM for source repo access.
 
 Feedback, replication attempts, and PRs welcome on the source repo. The issues I'd be most interested in. Cross-model variants (Phi-3, Mistral, OLMo, Qwen3). The v0.1.0 multi-labeler dataset's per-source label-quality breakdown. Anyone who can reproduce cos > 0.5 on a 4 GB card.
 
