@@ -28,6 +28,7 @@ This is the **bundled public release** of the Gemma-4-E2B NLA pair (v0.0.1) plus
 - [`Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1) — AR (Critic) adapter + linear head
 
 **Datasets:**
+- [`Solshine/gemma-4-e2b-nla-eval-smoke`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-eval-smoke) — 20-row held-out smoke-eval set. Used by the bundled `examples/smoke_test.py`.
 - [`Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit) — 696-row AR-SFT corpus, Claude Haiku persona+audit labels
 - [`Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-gemini-persona-audit`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-gemini-persona-audit) — 4,734-row AV-SFT corpus, Gemini persona+audit, 9 source families
 - [`Solshine/gemma-4-e2b-deception-behavior-completions`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-deception-behavior-completions) — companion 910-row deception/behavior corpus
@@ -43,7 +44,10 @@ This is the **bundled public release** of the Gemma-4-E2B NLA pair (v0.0.1) plus
 - `MODEL_CARD_AR.md` — the AR HuggingFace card
 - `lesswrong_post.md` — the announcement post
 - `figures/` — 6 release figures (training loss, cos distribution, source breakdown, label word counts, v0.0.1 vs v0.1.0, per-row scatter)
-- `examples/round_trip_inference.py` — minimum-viable round-trip inference example
+- `requirements.txt` — pinned versions, tested 2026-05-12
+- `examples/round_trip_example.py` — self-contained CLI that takes your text, extracts an activation, runs round-trip, prints cos
+- `examples/smoke_test.py` — self-contained environment validator (downloads adapters + 20-row eval from HF, runs round-trip on 3 fixed rows, asserts cos > 0.30)
+- `examples/eval_round_trip.py` — full eval script (used for the published n=42 evaluation; requires an eval parquet via `--eval-data`)
 
 ---
 
@@ -164,6 +168,8 @@ The "trained on a 4 GB laptop" hook is real but it leans on a stack of small des
 
 ## Quick start
 
+This bundled repo is **self-contained**. You do NOT need access to the private source research repo to use the v0.0.1 NLA pair. Everything in steps 1-3 below works from a fresh clone of `nla-gemma-4-e2b` alone.
+
 ### 1. Environment
 
 Tested on:
@@ -172,19 +178,17 @@ Tested on:
 - Should also work on any Linux/Mac/Windows host with Python 3.10+ and a 4+ GB NVIDIA GPU. Adjust the torch wheel for your CUDA.
 
 ```bash
-# Clone source repo (currently private — DM me for access).
-# Once granted you'll have access to the inference script + smoke test + full pipeline.
-git clone https://github.com/SolshineCode/deception-nanochat-sae-research
-cd deception-nanochat-sae-research
+git clone https://github.com/SolshineCode/nla-gemma-4-e2b
+cd nla-gemma-4-e2b
 
 # Create venv
-python -m venv .venv-gemma4
+python -m venv .venv
 # Activate (pick one):
-.venv-gemma4/Scripts/activate     # Windows
-source .venv-gemma4/bin/activate  # Linux/Mac
+.venv/Scripts/activate     # Windows
+source .venv/bin/activate  # Linux/Mac
 
 # Install pinned dependencies
-pip install -r experiments/v8_nla_local/requirements.txt
+pip install -r requirements.txt
 ```
 
 You also need a HuggingFace account with access to `google/gemma-4-E2B` (Gemma license accept on the model page).
@@ -196,12 +200,24 @@ huggingface-cli login   # paste your HF token
 ### 2. Smoke test (5 minutes, verifies env + GPU + adapters)
 
 ```bash
-KMP_DUPLICATE_LIB_OK=TRUE python -u experiments/v8_nla_local/smoke_test_replication.py
+KMP_DUPLICATE_LIB_OK=TRUE python -u examples/smoke_test.py
 ```
 
-The smoke test downloads the two v0.0.1 adapters from HuggingFace, loads them onto your GPU, runs round-trip inference on a 3-row fixed sample, and asserts cos > 0.30. If it prints `SMOKE TEST PASSED` you have a working replication environment. If anything fails, the assertion + traceback will tell you which step.
+The smoke test downloads the v0.0.1 AV+AR adapters and the 20-row [smoke-eval dataset](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-eval-smoke) from HuggingFace, runs round-trip inference on the first 3 activations, and asserts at least 2 of 3 clear the 0.30 noise floor. If it prints `SMOKE TEST PASSED` you have a working environment. If anything fails, the assertion plus traceback will tell you which step (CUDA missing, Gemma license not accepted, bitsandbytes version, etc.).
 
-### 3. Inference example
+### 3. Run round-trip inference on your own text
+
+```bash
+KMP_DUPLICATE_LIB_OK=TRUE python -u examples/round_trip_example.py "The cat sat on the mat."
+```
+
+This loads Gemma-4-E2B + both adapters from HuggingFace, extracts an L23 activation from the last token of your input, generates an AV explanation, reconstructs the activation through the AR, and prints the round-trip cosine similarity. ~3-5 minutes on a 4 GB consumer GPU, ~30 seconds on an A100. Self-contained: no local data files required.
+
+Useful for: poking at what kinds of text the NLA produces meaningful explanations for, integrating the NLA into a downstream interpretability or safety-monitoring pipeline, replicating the v0.0.1 published profile on your hardware before training your own variant.
+
+### 4. Inference example (programmatic)
+
+If you want to integrate the AV+AR directly into your own code rather than running a CLI script, the model-loading boilerplate is:
 
 ```python
 import torch
@@ -221,9 +237,11 @@ av = PeftModel.from_pretrained(base, "Solshine/gemma-4-e2b-nla-L23-av-v0_0_1")
 tok = AutoTokenizer.from_pretrained("google/gemma-4-E2B")
 ```
 
-For the full inference pipeline (load AV+AR, extract activation at L23, generate explanation, reconstruct activation, measure cos), see `examples/eval_round_trip.py`.
+See `examples/round_trip_example.py` for a complete end-to-end script that includes the forward-hook injection mechanism (Gemma-4-E2B requires it because `inputs_embeds` OOMs on 4 GB GPUs).
 
-### 4. Full pipeline (regenerate v0.0.1 from scratch)
+### 5. Full reproducibility pipeline (regenerate v0.0.1 from scratch)
+
+This step requires access to the source research repo (currently private, **available upon request — DM me**). The bundled repo includes the trained adapters and the smoke-eval dataset, but the Stage 0 → Stage 3 corpus extraction and training scripts live in the source repo.
 
 End-to-end on a 4 GB GPU is ~6 hours. Commands run from the source repo root:
 
