@@ -1,0 +1,44 @@
+{
+  "fig01_training_loss": {
+    "fig": "experiments\\v8_nla_local\\release\\v0_0_1\\figures\\01_v0_0_1_training_loss.png",
+    "sections_plotted": 2,
+    "av_points": 40,
+    "ar_points": 40
+  },
+  "fig02_cos_distribution": {
+    "fig": "experiments\\v8_nla_local\\release\\v0_0_1\\figures\\02_round_trip_cos_distribution_v0_0_1.png",
+    "n": 42,
+    "mean": 0.43783685706910636,
+    "median": 0.43428030610084534,
+    "min": 0.31321269273757935,
+    "max": 0.5575331449508667,
+    "std": 0.054464976702132885,
+    "fraction_above_threshold": 1.0
+  },
+  "fig03_corpus_source_breakdown": {
+    "fig": "experiments\\v8_nla_local\\release\\v0_0_1\\figures\\03_corpus_source_breakdown.png",
+    "labeled_total": 3480,
+    "pending_total": 1757,
+    "families_labeled": 7,
+    "families_pending": 3
+  },
+  "fig04_label_word_dist": {
+    "fig": "experiments\\v8_nla_local\\release\\v0_0_1\\figures\\04_label_word_count_distribution.png",
+    "v0_median": 75.0,
+    "v1_median": 68.0,
+    "v0_n": 1852,
+    "v1_n": 1852
+  },
+  "fig05_cos_comparison": {
+    "fig": "experiments\\v8_nla_local\\release\\v0_0_1\\figures\\05_cos_comparison_v0_0_1_vs_v0_1_0_interim.png",
+    "v0_mean": 0.43783685706910636,
+    "v1_mean": 0.4410866164055067,
+    "delta_mean": 0.0032497593364003707
+  },
+  "fig06_per_row_scatter": {
+    "fig": "experiments\\v8_nla_local\\release\\v0_0_1\\figures\\06_per_row_round_trip_scatter.png",
+    "n": 42,
+    "mse_min": 0.8849338293075562,
+    "mse_max": 1.3735747337341309
+  }
+}
