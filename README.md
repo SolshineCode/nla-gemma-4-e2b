@@ -30,6 +30,9 @@ This is the **bundled public release** of the Gemma-4-E2B NLA pair (v0.0.2) plus
 - [`Solshine/gemma-4-e2b-nla-L23-av-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1) — AV (Actor) adapter, NF4 + LoRA r=64
 - [`Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1) — AR (Critic) adapter + linear head
 
+**Trajectory (research data, in-progress 2026-05-13/14):**
+- [`Solshine/gemma-4-e2b-nla-L23-av-v0_1_x-trajectory`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_1_x-trajectory) — every 50-step intermediate AV checkpoint from a 500-step v0.1.x cheap-path SFT run on the 4,734-row Gemini persona+audit corpus. Scale-up experiment within the 4 GB GPU regime. Step_000050 and step_000100 uploaded; remaining checkpoints will land as training progresses. See [the trajectory release plan](https://github.com/SolshineCode/deception-nanochat-sae-research/blob/main/notes/RELEASE_PLAN_v0_1_x_cheap_path.md) for the full layout and the scheduled H5-style ablations at step_000200 and step_000500.
+
 **Datasets:**
 - [`Solshine/gemma-4-e2b-nla-eval-smoke`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-eval-smoke) — 20-row held-out smoke-eval set. Used by the bundled `examples/smoke_test.py`.
 - [`Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit) — 696-row AR-SFT corpus, Claude Haiku persona+audit labels
