@@ -42,6 +42,55 @@ For the matched AV (Actor) half, see [`Solshine/gemma-4-e2b-nla-L23-av-v0_0_1`](
 
 This is the **first half-precision LoRA AR** of the public NLA family — Anthropic's full-finetune AR variants need 14+ GB; this fits on 4 GB.
 
+## How v0.0.1 fits the constraints (the tricks)
+
+### Hardware (fit Gemma-4-E2B truncated + AR training on 4 GB VRAM)
+
+- **NF4 4-bit base weights.** Cuts the ~4 GB bf16 model to ~1 GB.
+- **AR truncation: first 18 of 35 layers + Linear(1536, 1536) head.** Forward pass only through half the model.
+- **LoRA r=64 on the surviving layers.** Only ~80 MB trainable + ~9 MB Linear head.
+- **bf16 LoRA on top of NF4 base.** Mixed precision; gradients fit.
+- **Gradient checkpointing.** Recomputes activations on backward; trades ~30% compute for ~40% VRAM.
+- **AdamW 8-bit optimizer.** Vs 32-bit AdamW, which holds 8 bytes/param of optimizer state and would not fit.
+- **`micro_batch=1` + `grad_accum=16`.** Effective batch 16 without the VRAM cost of a real batch 16.
+- **`max_length=512` context.** Vs 2048+ standard. Cuts activation tensors 4×.
+- **Forward-hook early-exit at layer 18.** Skips the second half of the model entirely; saves both compute and VRAM.
+- **Suffix-anchored activation extraction at tokens[-1].** Single-token output, no scan-for-marker; minimal eval-time memory pressure.
+
+### Time (3 weeks of evenings, ~1.5 GPU-hours per full AR run)
+
+- **Restart-safe chunked parquet output.** Per-batch chunks in a `chunks/` subdir; relaunches skip already-done batches. Saved 2+ days when Gemini quota walls hit mid-run.
+- **Watchdog auto-resume across Gemini daily quota cycles.** Continues labeling across the 24h reset wall without manual relaunch.
+- **`PYTHONUNBUFFERED=1` / `python -u`** on every long training run.
+- **`save_interval=50`.** First checkpoint lands inside ~2.5 hours of training.
+- **Sidecar `nla_meta.yaml` per checkpoint.** Eval-provenance lookup in 1 file open.
+
+### Budget ($0 cloud, ~$0.50 in API spend total)
+
+- **Local 4 GB GPU.** Zero cloud compute spend for v0.0.1 training and eval.
+- **Gemini CLI in YOLO mode under personal Gemini Pro subscription.** Free labeling for the v0.1.x diversified corpus.
+- **Claude Code credits for Claude Haiku labeler.** Already paid for; zero marginal cost.
+- **gpt-4o-mini fallback only when needed.** v0.0.1's full original labeling was ~$0.50 total.
+- **Synthetic personas (Dr Chen + Dr Otsuka) instead of real LLM judges.** Two cheap LLM calls per row, no judge-API surcharge.
+- **HuggingFace free tier for hosting.** Model repos + dataset repos at $0/mo.
+
+### Methodology (descope stays faithful, not corner-cutting)
+
+- **Persona+audit labeling pipeline.** Dr Chen labeler then Dr Otsuka auditor.
+- **Per-row `labeler_model` provenance column.** Future cross-labeler ablations don't need a rerun.
+- **Honest-accuracy training-trend verdict (slope < −0.002/step AND R² ≥ 0.10).**
+- **Data-permanence directive.** Commit every parquet to `results/` immediately.
+- **Eval-provenance sidecar convention.** Commit SHA + parquet SHA-256 + headline cos numbers in YAML.
+
+### Software / tooling (Windows-specific gotchas)
+
+- **`shutil.which("gemini")`** to resolve npm `.CMD` shims.
+- **`MSYS_NO_PATHCONV=1 taskkill /F /T /PID`** for stuck Python processes from Git Bash.
+- **`device_map={"": torch.cuda.current_device()}` (integer)** not `{"": "cuda"}` (string).
+- **`KMP_DUPLICATE_LIB_OK=TRUE`** prefix on every run.
+
+**Total spend for v0.0.1:** ~$0.50 in API charges + $0 cloud + electricity for ~6 GPU-hours on a laptop. Time: 3 weeks of evenings.
+
 ## Honest performance summary
 
 | Metric | Value |

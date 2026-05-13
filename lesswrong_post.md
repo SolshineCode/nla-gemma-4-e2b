@@ -76,6 +76,63 @@ The 910-row Gemma-4-E2B deception/behavior completions corpus is published as a 
 
 ---
 
+## How v0.0.1 fits the constraints (the tricks)
+
+The "trained on a 4 GB laptop" hook is real but it leans on a stack of small descopes, each of which I will name. None of them break the methodology. Together they fit the budget.
+
+### Hardware (fit Gemma-4-E2B + training on 4 GB VRAM)
+
+- **NF4 4-bit base weights.** Cuts the ~4 GB bf16 model to ~1 GB.
+- **LoRA r=64 instead of full fine-tuning.** Only ~50 MB trainable, not billions of params.
+- **bf16 LoRA on top of NF4 base.** Mixed precision; gradients fit.
+- **Gradient checkpointing.** Recomputes activations on backward; trades ~30% compute for ~40% VRAM.
+- **AdamW 8-bit optimizer.** Vs 32-bit AdamW, which holds 8 bytes/param of optimizer state and would not fit.
+- **`micro_batch=1` + `grad_accum=16`.** Effective batch 16 without the VRAM cost of a real batch 16.
+- **`max_length=512` context.** Vs 2048+ standard. Cuts activation tensors 4×.
+- **AR truncation: first 18 of 35 layers + Linear(1536, 1536) head.** Forward pass only through half the model.
+- **Forward-hook injection on embedding layer (NOT `inputs_embeds`).** Gemma-4 OOMs on `inputs_embeds`; the in-place hook variant fits 4 GB.
+- **`captured[0] = ...` in-place overwrite, not `captured.append(...)`.** Fixed a 240 MB residual leak that would have spilled to CPU on long generations.
+
+### Time (3 weeks of evenings, ~6 GPU-hours per full run)
+
+- **Restart-safe chunked parquet output.** Per-batch chunks in a `chunks/` subdir; relaunches skip already-done batches. Saved 2+ days when Gemini quota walls hit mid-run.
+- **Watchdog auto-resume across Gemini daily quota cycles.** Continues labeling across the 24h reset wall without manual relaunch.
+- **`PYTHONUNBUFFERED=1` / `python -u`** on every long training run. Avoided a 2-GPU-hour false "stuck" diagnosis from block-buffered stdout.
+- **`save_interval=50`** (not 100 or 500). First checkpoint lands inside ~2.5 hours so we get fast confirmation training is actually working.
+- **Squash-merge PR cadence.** Clean main history, parallel feature branches without merge hell.
+- **Sidecar `nla_meta.yaml` per checkpoint.** Eval-provenance lookup in one file open instead of grepping result JSONs.
+
+### Budget ($0 cloud, ~$0.50 in API spend total)
+
+- **Local 4 GB GPU.** Zero cloud compute spend for v0.0.1 training and eval.
+- **Gemini CLI in YOLO mode under personal Gemini Pro subscription.** Free labeling for the v0.1.x diversified corpus.
+- **Claude Code credits for Claude Haiku labeler.** Already paid for; zero marginal cost on the 696-row v0.0.x ar_sft re-label.
+- **gpt-4o-mini fallback only when needed.** v0.0.1's full original labeling was ~$0.50 total.
+- **Synthetic personas (Dr Chen + Dr Otsuka) instead of real LLM judges.** Two cheap LLM calls per row, no judge-API surcharge.
+- **HuggingFace free tier for hosting.** Model repos + dataset repos at $0/mo.
+- **GitHub free tier for public repo storage.** Including LFS-free parquet commits under the ~50 MB threshold.
+- **Free public corpora.** OpenWebText, FineWeb-Edu, Wikipedia, Anthropic safety datasets, PKU-SafeRLHF, arXiv abstracts.
+- **Round-trip eval done locally.** No API charges for the cos measurement.
+
+### Methodology (descope stays faithful, not corner-cutting)
+
+- **Persona+audit labeling pipeline.** Dr Chen labeler then Dr Otsuka auditor instead of one-shot prompts. Tighter labels, two passes preserved per row.
+- **Per-row `labeler_model` provenance column.** Future cross-labeler ablations happen without rerunning anything.
+- **Honest-accuracy training-trend verdict (slope < −0.002/step AND R² ≥ 0.10).** Caught a real over-claim before it shipped.
+- **Data-permanence directive.** Commit every parquet to `results/` immediately; "regeneratable from script" doesn't count.
+- **Eval-provenance sidecar convention.** Commit SHA + parquet SHA-256 + headline cos numbers in YAML alongside each checkpoint.
+
+### Software / tooling (Windows-specific gotchas)
+
+- **`shutil.which("gemini")`** to resolve npm `.CMD` shims. `subprocess.run(["gemini", ...])` can't find them; `subprocess.run([shutil.which("gemini"), ...])` does.
+- **`MSYS_NO_PATHCONV=1 taskkill /F /T /PID`** to kill stuck Python processes from Git Bash without MSYS rewriting `/F` to a Windows path.
+- **`device_map={"": torch.cuda.current_device()}` (integer)** not `{"": "cuda"}` (string). The string form silently falls back to CPU on bitsandbytes 0.49.2 with no error.
+- **`KMP_DUPLICATE_LIB_OK=TRUE`** prefix on every run to dodge the torch+numpy OpenMP conflict on Windows.
+
+**Total spend for v0.0.1:** ~$0.50 in API charges + $0 cloud + electricity for ~6 GPU-hours on a laptop. Time: 3 weeks of evenings, with the failed continuation experiment and the AR-descending false alarm both folded in.
+
+---
+
 ## Honest "what didn't work" section
 
 I tried a +40-step SFT continuation at lower learning rate to push past the v0.0.1 cos = 0.438 ceiling, and the result was bad. AV training-loss flat at ~1.30 across all 40 steps. AV empty-output rate jumped 16% → 65%. The honest-accuracy regression verdict on that training:
