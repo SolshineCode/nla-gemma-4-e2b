@@ -117,6 +117,7 @@ Round-trip cos is the matched AV+AR pair on held-out OpenWebText activations. Th
 ## Limitations
 
 - Pair with the matched v0.0.1 AV. Mixing this AR with a third-party AV has not been validated.
+- Round-trip cos at the joint pair's level is symmetric: a comparable cos can be obtained from AV templates of varying per-row diversity, so cos alone does not adjudicate AV explanation faithfulness. Qualitative inspection of v0.0.1 AV outputs shows convergence toward a small set of explanation templates. Future releases will report per-row template diversity alongside cos.
 - Training corpus is OpenWebText-only. v0.1.0 with diversified labels across 10 source families is in progress.
 - Round-trip cos = 0.438 is below Anthropic's published 7B numbers (~0.7+). Use for methodology replication, not absolute performance matching.
 - Linear(1536, 1536) head is loaded separately from the LoRA adapter (`linear_head.pt`).

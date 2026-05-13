@@ -69,6 +69,8 @@ Cos = 0.438 is well below Anthropic's published 7B numbers (~0.7+). This is the 
 
 **Honest failure-rate disclosure.** 16% of attempted eval rows (8 of 50) produced empty AV outputs and were excluded from the cos calculation. That's a real failure mode of the small-model variant at eval time, not a quirk of the held-out set. v0.1.x with the diversified 9-source-family corpus and a longer SFT step budget is the test of whether scale fixes it.
 
+**Note on per-row explanation diversity.** Round-trip cos and per-row explanation faithfulness are dissociable. Qualitative inspection of the v0.0.1 AV's 42 per-row outputs shows convergence toward ~4 explanation templates across the eval set; the v0.1.x interim AV (trained on diversified persona+audit labels) shows 55 unique patterns across 97 rows at equivalent cos (0.441). This suggests label diversity, not SFT step count, is the load-bearing variable. Future versions will report a "unique-templates-per-100-rows" metric alongside cos so both axes are visible separately. The full per-row eval JSON is shipped in the source repo for direct audit.
+
 ---
 
 ## How v0.0.1 fits the constraints (the tricks)
@@ -130,6 +132,44 @@ The "trained on a 4 GB laptop" hook is real but it leans on a stack of small des
 
 ## Quick start
 
+### 1. Environment
+
+Tested on:
+
+- Windows 11, Python 3.14, CUDA 13.0 toolkit, NVIDIA driver 581.57, GTX 1650 Ti Max-Q (4 GB VRAM)
+- Should also work on any Linux/Mac/Windows host with Python 3.10+ and a 4+ GB NVIDIA GPU. Adjust the torch wheel for your CUDA.
+
+```bash
+# Clone source repo (for the inference script + smoke test)
+git clone https://github.com/SolshineCode/deception-nanochat-sae-research
+cd deception-nanochat-sae-research
+
+# Create venv
+python -m venv .venv-gemma4
+# Activate (pick one):
+.venv-gemma4/Scripts/activate     # Windows
+source .venv-gemma4/bin/activate  # Linux/Mac
+
+# Install pinned dependencies
+pip install -r experiments/v8_nla_local/requirements.txt
+```
+
+You also need a HuggingFace account with access to `google/gemma-4-E2B` (Gemma license accept on the model page).
+
+```bash
+huggingface-cli login   # paste your HF token
+```
+
+### 2. Smoke test (5 minutes, verifies env + GPU + adapters)
+
+```bash
+KMP_DUPLICATE_LIB_OK=TRUE python -u experiments/v8_nla_local/smoke_test_replication.py
+```
+
+The smoke test downloads the two v0.0.1 adapters from HuggingFace, loads them onto your GPU, runs round-trip inference on a 3-row fixed sample, and asserts cos > 0.30. If it prints `SMOKE TEST PASSED` you have a working replication environment. If anything fails, the assertion + traceback will tell you which step.
+
+### 3. Inference example
+
 ```python
 import torch
 from peft import PeftModel
@@ -140,15 +180,71 @@ bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_compute_dtype=torch.float16
 base = AutoModelForCausalLM.from_pretrained(
     "google/gemma-4-E2B",
     quantization_config=bnb,
+    # NOTE: use the integer form, NOT {"": "cuda"}.
+    # The string form silently falls back to CPU on bitsandbytes 0.49.2.
     device_map={"": torch.cuda.current_device()},
 )
 av = PeftModel.from_pretrained(base, "Solshine/gemma-4-e2b-nla-L23-av-v0_0_1")
 tok = AutoTokenizer.from_pretrained("google/gemma-4-E2B")
-
-# To produce explanations from activations, see examples/round_trip_inference.py
 ```
 
-For the full inference pipeline (load AV+AR, extract activation at L23, generate explanation, reconstruct activation, measure cos), see `examples/round_trip_inference.py`.
+For the full inference pipeline (load AV+AR, extract activation at L23, generate explanation, reconstruct activation, measure cos), see `examples/eval_round_trip.py`.
+
+### 4. Full pipeline (regenerate v0.0.1 from scratch)
+
+End-to-end on a 4 GB GPU is ~6 hours. Commands run from the source repo root:
+
+```bash
+# Stage 0: extract activations from OpenWebText at Gemma-4-E2B L23
+python experiments/v8_nla_local/stage0_data_gen.py \
+  --output experiments/v8_nla_local/data/stage0/base.parquet \
+  --corpus stas/openwebtext-10k --n-docs 800 --positions-per-doc 4 --seed 17
+
+# Stage 1: doc-keyed train/eval split
+python experiments/v8_nla_local/stage1_concat_session9.py \
+  --output-dir experiments/v8_nla_local/data/stage1
+
+# Stage 2: label with Gemini CLI (free under personal Gemini Pro subscription)
+# Or with Claude Haiku via the Claude Code CLI (also free under subscription)
+python experiments/v8_nla_local/stage2_gemini_explain.py \
+  --input experiments/v8_nla_local/data/stage1/av_sft.parquet \
+  --output experiments/v8_nla_local/data/stage2/av_sft_labeled.parquet \
+  --labeler gemini --persona expert --audit
+
+# Stage 3: build training format from labels
+python experiments/v8_nla_local/stage3_build.py \
+  --av-input experiments/v8_nla_local/data/stage2/av_sft_labeled.parquet \
+  --ar-input experiments/v8_nla_local/data/stage1/ar_sft.parquet \
+  --output-dir experiments/v8_nla_local/data/stage3
+
+# AV SFT (~3 GPU-hours on 4 GB card)
+KMP_DUPLICATE_LIB_OK=TRUE python -u experiments/v8_nla_local/stage_av_sft.py \
+  --train-data experiments/v8_nla_local/data/stage3/av_sft.parquet \
+  --output experiments/v8_nla_local/checkpoints/av_repro \
+  --max-steps 55 --save-interval 50
+
+# AR SFT (~1.5 GPU-hours)
+KMP_DUPLICATE_LIB_OK=TRUE python -u experiments/v8_nla_local/stage_ar_sft.py \
+  --train-data experiments/v8_nla_local/data/stage3/ar_sft.parquet \
+  --output experiments/v8_nla_local/checkpoints/ar_repro \
+  --max-steps 55 --save-interval 50
+
+# Round-trip eval (~2 GPU-hours for n=50)
+python experiments/v8_nla_local/eval_round_trip.py \
+  --av-checkpoint experiments/v8_nla_local/checkpoints/av_repro/final \
+  --ar-checkpoint experiments/v8_nla_local/checkpoints/ar_repro/final \
+  --eval-data experiments/v8_nla_local/data/stage1/rl.parquet \
+  --output experiments/v8_nla_local/results/round_trip_repro.json \
+  --limit 50
+```
+
+### Common gotchas
+
+- **`device_map={"": "cuda"}` fails silently on bitsandbytes 0.49.2.** Use `device_map={"": torch.cuda.current_device()}` (integer).
+- **`KMP_DUPLICATE_LIB_OK=TRUE`** prefix is required on Windows to avoid the torch+numpy OpenMP conflict.
+- **Gemma-4 OOMs on `inputs_embeds` injection on 4 GB GPUs.** Use the forward-hook variant (already in the eval/training scripts).
+- **`python -u` (unbuffered)** is required for long training runs or step prints get buffered for hours.
+- **CUDA wheel must match driver.** The `requirements.txt` pins `torch==2.10.0+cu128`. If your driver is older, install the matching torch wheel from pytorch.org instead.
 
 ---
 

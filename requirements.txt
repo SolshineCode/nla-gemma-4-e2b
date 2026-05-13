@@ -1,0 +1,41 @@
+# V8 NLA Local pinned requirements
+# Tested 2026-05-12 on Windows 11 + Python 3.14 + CUDA 13.0 toolkit + NVIDIA driver 581.57
+# GTX 1650 Ti Max-Q (4 GB VRAM). Should also work on any 4+ GB consumer NVIDIA GPU.
+#
+# To install: python -m venv .venv-gemma4 && .venv-gemma4/Scripts/activate (Windows) or
+#                 source .venv-gemma4/bin/activate (Linux/Mac), then `pip install -r requirements.txt`.
+#
+# torch needs to match your CUDA. The +cu128 wheel below assumes CUDA 12.8 host driver compat
+# (the GTX 1650 Ti driver 581.57 supports it). If your driver does NOT support CUDA 12.8, install
+# the matching torch wheel from pytorch.org instead and leave the +cu128 tag off.
+
+torch==2.10.0+cu128 --extra-index-url https://download.pytorch.org/whl/cu128
+transformers==5.5.4
+peft==0.19.1
+bitsandbytes==0.49.2
+accelerate==1.13.0
+safetensors==0.7.0
+sentencepiece==0.2.1
+
+# Data + I/O
+datasets==4.8.4
+pyarrow==24.0.0
+numpy==2.4.4
+scipy==1.17.1
+PyYAML==6.0.3
+
+# Plotting + dashboards
+matplotlib==3.10.9
+
+# Hub + tooling
+huggingface_hub==1.11.0
+tqdm==4.67.3
+
+# Labelers (only needed if you regenerate Stage 2 labels yourself; otherwise skip)
+anthropic==0.97.0
+# Gemini CLI is invoked via subprocess and is installed separately:
+#   npm install -g @google/generative-ai-cli
+# No Python package needed for Gemini labeling.
+
+# Testing
+pytest==8.4.2
