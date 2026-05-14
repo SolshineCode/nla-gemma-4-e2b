@@ -31,9 +31,13 @@ This is the **bundled public release** of the Gemma-4-E2B NLA pair (v0.0.2) plus
 - [`Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1) — AR (Critic) adapter + linear head
 
 **Trajectory (research data, in-progress 2026-05-13/14):**
-- [`Solshine/gemma-4-e2b-nla-L23-av-v0_1_x-trajectory`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_1_x-trajectory) — every 50-step intermediate AV checkpoint from a 500-step v0.1.x cheap-path SFT run on the 4,734-row Gemini persona+audit corpus. Scale-up experiment within the 4 GB GPU regime. Step_000050 and step_000100 uploaded; remaining checkpoints will land as training progresses. See [the trajectory release plan](https://github.com/SolshineCode/deception-nanochat-sae-research/blob/main/notes/RELEASE_PLAN_v0_1_x_cheap_path.md) for the full layout and the scheduled H5-style ablations at step_000200 and step_000500.
+- [`Solshine/gemma-4-e2b-nla-L23-av-v0_1_x-trajectory`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_1_x-trajectory) (HuggingFace mirror) — every 50-step intermediate AV checkpoint from the v0.1.x cheap-path SFT run on the 4,734-row Gemini persona+audit corpus.
+- [`v0.0.3-trajectory-in-progress`](https://github.com/SolshineCode/nla-gemma-4-e2b/releases/tag/v0.0.3-trajectory-in-progress) (GitHub Releases mirror) — same adapter weights attached as release assets with per-checkpoint filenames (`adapter_model_step_XXXXXX.safetensors`). Use whichever mirror is faster for you.
+- [`trajectory/`](trajectory/) (this repo) — per-checkpoint metadata (`adapter_config.json`, `nla_meta.yaml`, README.md) for each saved step. The weights themselves are on HF + GitHub Releases (see above); this in-repo subdir mirrors the small files only.
 
-**Datasets:**
+The cheap-path is a **scale-up experiment within the 4 GB GPU regime** to test whether the 6.8× larger corpus moves the AR_OUT−EMPTY content-sensitivity delta above the v0.0.x +0.024 ceiling. Step_000050 and step_000100 uploaded; remaining checkpoints land as training progresses. Scheduled H5-style ablation at step_000200 — see [the trajectory release plan](https://github.com/SolshineCode/deception-nanochat-sae-research/blob/main/notes/RELEASE_PLAN_v0_1_x_cheap_path.md).
+
+**Datasets:** see [`TRAINING_DATASETS.md`](TRAINING_DATASETS.md) for the complete, per-variant breakdown of every source corpus and every labeled training set used. Quick links to the published Solshine datasets:
 - [`Solshine/gemma-4-e2b-nla-eval-smoke`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-eval-smoke) — 20-row held-out smoke-eval set. Used by the bundled `examples/smoke_test.py`.
 - [`Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit) — 696-row AR-SFT corpus, Claude Haiku persona+audit labels
 - [`Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-gemini-persona-audit`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-gemini-persona-audit) — 4,734-row AV-SFT corpus, Gemini persona+audit, 9 source families
