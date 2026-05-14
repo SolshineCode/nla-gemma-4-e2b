@@ -33,6 +33,7 @@ For the matched AR (Critic) half, see [`Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1`]
 - **Full reproducibility chain.** Corpus to labels to SFT to eval is single-command runnable. Every prompt versioned with SHA-256.
 - **Companion dataset published independently.** 910-row Gemma-4-E2B deception/behavior completions corpus with full methodology.
 - **Honest-accuracy verdict tooling.** Regression-based "descending vs flat" thresholds plus a 6-panel training dashboard.
+- **Both halves of the NLA pair (AV and AR) trained via LoRA fine-tuning.** r=64, alpha=128 adapters on top of an NF4-quantized base — only ~50 MB of trainable parameters per half versus full fine-tuning of billions. This is the load-bearing reason the methodology fits on a 4 GB consumer GPU at all.
 
 This is the **methodology-validation small-model variant**. It's NOT a numbers-parity release with Anthropic's published 7B variants (Qwen-7B, Gemma-3-12B/27B, Llama-3.3-70B). Their cos is in the 0.7+ range. Ours is 0.438. The contribution is the **democratization path**. NLA-style interpretability becomes accessible to researchers without cluster compute.
 

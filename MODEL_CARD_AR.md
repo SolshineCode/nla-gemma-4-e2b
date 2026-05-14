@@ -25,6 +25,14 @@ This is the **AR (Critic)** half of an NLA pair following the methodology of [`k
 
 For the matched AV (Actor) half, see [`Solshine/gemma-4-e2b-nla-L23-av-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1). For the consolidated companion dataset, see [`Solshine/gemma-4-e2b-deception-behavior-completions`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-deception-behavior-completions).
 
+## What's distinctive about this release
+
+- **First open-source NLA AR released independently of Anthropic's NLA team.** The methodology was Anthropic's (Fraser-Taliente et al. 2026). This is the first community/third-party reproduction.
+- **First half-precision LoRA AR of the public NLA family.** Anthropic's full-finetune AR variants need 14+ GB; this fits on 4 GB.
+- **AR achieved via LoRA fine-tuning** (r=64, alpha=128) on an NF4-quantized truncated Gemma-4-E2B (first 18 of 35 layers + Linear(1536, 1536) projection head). Only ~80 MB trainable LoRA + ~9 MB linear head versus full fine-tuning of billions of params. This is the load-bearing reason the methodology fits on a 4 GB consumer GPU.
+- **Honest small-model framing.** Round-trip cos = 0.438 ± 0.054 on n=42 held-out activations matched-pair with the v0.0.1 AV.
+- **AR content-blindness disclosure (see below).** Cos 0.405 from feeding the AR an empty string vs 0.429 from real explanation — ~95% structural projection, ~5% explanation-dependent at this training scale.
+
 ## Architecture and training
 
 - **Base model**. `google/gemma-4-E2B` truncated to the first 18 of 35 text layers + Linear(1536, 1536) head
