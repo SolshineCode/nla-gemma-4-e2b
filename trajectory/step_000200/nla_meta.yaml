@@ -1,0 +1,59 @@
+kind: nla_model
+role: actor
+version: v0.1.x_cheap_path_step_000200_FINAL
+base_model: google/gemma-4-E2B
+extraction:
+  d_model: 1536
+  layer: 23
+  injection_scale: sqrt_d_model
+  mse_scale: sqrt_d_model
+tokens:
+  injection_token_id: 249568
+  injection_left_neighbor_id: 236813
+  injection_right_neighbor_id: 954
+av_lora:
+  r: 64
+  alpha: 128
+  target_modules_regex: 'model\.language_model\.layers\.\d+\.(self_attn|mlp)\.(q_proj|k_proj|v_proj|o_proj|gate_proj|up_proj|down_proj)'
+training:
+  lr: 1.0e-4
+  max_steps_configured: 500
+  steps_completed_at_this_checkpoint: 200
+  steps_completed_overall: 200
+  early_stopping: true
+  early_stopping_reason: |
+    Stopped at step 200 (not the configured 500) by user direction. Loss
+    plateau visible in steps 100-200 (2.20-2.30 range with occasional dips
+    to 2.11). Marginal value of training step 200 -> 500 on this corpus
+    judged low compared to redirecting GPU time to Phase B's 25K-row
+    continued-training experiment.
+  loss_at_step_50: 2.3843
+  loss_at_step_100: 2.2389
+  loss_at_step_150: 2.2504
+  loss_at_step_200: 2.1954
+  loss_at_step_165_local_min: 2.1129
+  micro_batch: 1
+  grad_accum: 16
+  effective_batch: 16
+  max_length: 512
+  optimizer: adamw_8bit
+  save_interval: 50
+training_data:
+  path: experiments/v8_nla_local/data/stage3_v0_1_full/av_sft.parquet
+  n_rows: 4734
+  source: Gemini CLI with persona+audit pipeline (Dr Chen labeler + Dr Otsuka auditor)
+  source_families: 9 (Wikipedia, FineWeb-Edu, arXiv, Gemma-4-E2B in-repo deception completions, PKU-SafeRLHF, Anthropic/discrim-eval, Anthropic/persuasion, CAI harmless, Anthropic/llm_global_opinions)
+eval_provenance:
+  ablation: H15 step_000200 ablation paired with v0.0.1 AR (Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1)
+  ablation_results_path: experiments/v8_nla_local/results/template_collapse_investigation/h15_step_000200_results.json
+  ablation_status: running (results pending)
+provenance_notes: |
+  v0.1.x cheap-path SCALE-UP experiment endpoint. 200 SFT steps × grad_accum
+  16 × batch 1 = 3,200 row exposures on the 4,734-row corpus = ~0.68 epochs.
+
+  Total effective training: 3,200 rows seen = 9x more than v0.0.1's
+  ~220 effective row exposures. If content-sensitivity ceiling at v0.0.x
+  (+0.024 delta) still holds at this scale, the bottleneck is the joint
+  AV+AR training regime, not just the AV side or the corpus size at this
+  scale. Phase B (25K-row continued training resumed from this checkpoint)
+  tests one more lever.

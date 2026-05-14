@@ -1,0 +1,46 @@
+kind: nla_model
+role: actor
+version: v0.1.x_cheap_path_step_000150
+base_model: google/gemma-4-E2B
+extraction:
+  d_model: 1536
+  layer: 23
+  injection_scale: sqrt_d_model
+  mse_scale: sqrt_d_model
+tokens:
+  injection_token_id: 249568
+  injection_left_neighbor_id: 236813
+  injection_right_neighbor_id: 954
+av_lora:
+  r: 64
+  alpha: 128
+  target_modules_regex: 'model\.language_model\.layers\.\d+\.(self_attn|mlp)\.(q_proj|k_proj|v_proj|o_proj|gate_proj|up_proj|down_proj)'
+training:
+  lr: 1.0e-4
+  max_steps_configured: 500
+  steps_completed_at_this_checkpoint: 150
+  loss_at_step_50: 2.3843
+  loss_at_step_100: 2.2389
+  loss_at_step_150: 2.2504
+  micro_batch: 1
+  grad_accum: 16
+  effective_batch: 16
+  max_length: 512
+  optimizer: adamw_8bit
+  save_interval: 50
+training_data:
+  path: experiments/v8_nla_local/data/stage3_v0_1_full/av_sft.parquet
+  n_rows: 4734
+  source: Gemini CLI with persona+audit pipeline (Dr Chen labeler + Dr Otsuka auditor)
+eval_provenance:
+  ablation_pending: true
+  note: |
+    Trend-table ablation across all checkpoints (50, 100, 150, 200) will run
+    after the planned step_000200 stopping point. Loss has plateaued around
+    2.20-2.30 from step 100 onward, with occasional dips to 2.11.
+provenance_notes: |
+  v0.1.x cheap-path SCALE-UP experiment. Tests whether 6.8x more data +
+  more SFT steps relative to v0.0.x can break the AR content-blindness
+  ceiling. This step_000150 checkpoint = 2,400 row exposures on the
+  4,734-row corpus = ~0.51 epochs. Loss flat with step_100 (2.25 vs
+  2.24), suggesting LoRA r=64 capacity has saturated on this corpus.

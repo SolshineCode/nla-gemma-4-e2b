@@ -30,12 +30,20 @@ This is the **bundled public release** of the Gemma-4-E2B NLA pair (v0.0.2) plus
 - [`Solshine/gemma-4-e2b-nla-L23-av-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1) — AV (Actor) adapter, NF4 + LoRA r=64
 - [`Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1) — AR (Critic) adapter + linear head
 
-**Trajectory (research data, in-progress 2026-05-13/14):**
-- [`Solshine/gemma-4-e2b-nla-L23-av-v0_1_x-trajectory`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_1_x-trajectory) (HuggingFace mirror) — every 50-step intermediate AV checkpoint from the v0.1.x cheap-path SFT run on the 4,734-row Gemini persona+audit corpus.
-- [`v0.0.3-trajectory-in-progress`](https://github.com/SolshineCode/nla-gemma-4-e2b/releases/tag/v0.0.3-trajectory-in-progress) (GitHub Releases mirror) — same adapter weights attached as release assets with per-checkpoint filenames (`adapter_model_step_XXXXXX.safetensors`). Use whichever mirror is faster for you.
-- [`trajectory/`](trajectory/) (this repo) — per-checkpoint metadata (`adapter_config.json`, `nla_meta.yaml`, README.md) for each saved step. The weights themselves are on HF + GitHub Releases (see above); this in-repo subdir mirrors the small files only.
+**v0.1.x cheap-path trajectory (in-progress retraining work, 2026-05-13):**
+The v0.0.2 disclosures motivated a scale-up experiment within the same 4 GB regime — train a fresh AV on the 6.8× larger 4,734-row Gemini persona+audit corpus and see whether the AR's content-sensitivity ceiling breaks. The first phase (cheap-path, 200 SFT steps) is complete; results land on the trajectory repos below as they're computed.
 
-The cheap-path is a **scale-up experiment within the 4 GB GPU regime** to test whether the 6.8× larger corpus moves the AR_OUT−EMPTY content-sensitivity delta above the v0.0.x +0.024 ceiling. Step_000050 and step_000100 uploaded; remaining checkpoints land as training progresses. Scheduled H5-style ablation at step_000200 — see [the trajectory release plan](https://github.com/SolshineCode/deception-nanochat-sae-research/blob/main/notes/RELEASE_PLAN_v0_1_x_cheap_path.md).
+![v0.1.x cheap-path training loss](figures/07_v0_1_x_cheap_path_training_loss.png)
+
+*Loss trajectory across 200 SFT steps on the 4,734-row v0.1.x corpus. Plateau visible from step ~100 onward (2.20-2.30 range with occasional dips to 2.11). Training stopped early at step 200 (instead of the configured 500) — the marginal value of additional steps on this corpus was judged low compared to redirecting GPU time to Phase B (a 25K-row continued-training experiment, see [`notes/PHASE_B_PLAN_25k_continued_training.md`](https://github.com/SolshineCode/deception-nanochat-sae-research/blob/main/notes/PHASE_B_PLAN_25k_continued_training.md) in the source repo). Green dashed line shows v0.0.1's final loss on the smaller corpus for reference. The H5-style content-sensitivity ablation against step_000200 runs after this trajectory release.*
+
+Three mirrors of the saved trajectory checkpoints:
+
+- [`Solshine/gemma-4-e2b-nla-L23-av-v0_1_x-trajectory`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_1_x-trajectory) (HuggingFace) — adapter weights per checkpoint, in `step_NNNNNN/` subfolders.
+- [`v0.0.3-trajectory-in-progress`](https://github.com/SolshineCode/nla-gemma-4-e2b/releases/tag/v0.0.3-trajectory-in-progress) (GitHub Releases) — same adapter weights attached as release assets with per-checkpoint filenames (`adapter_model_step_XXXXXX.safetensors`). Use whichever mirror is faster for you.
+- [`trajectory/`](trajectory/) (this repo) — per-checkpoint metadata (`adapter_config.json`, `nla_meta.yaml`, README.md). Small files only; weights live on HF + GitHub Releases.
+
+Phase B (queued): 25K-row corpus + continued training resumed from `step_000200`. Tests dataset-size as the last unfalsified lever for breaking the AR content-blindness ceiling on the 4 GB regime. Full plan in [`notes/PHASE_B_PLAN_25k_continued_training.md`](https://github.com/SolshineCode/deception-nanochat-sae-research/blob/main/notes/PHASE_B_PLAN_25k_continued_training.md). Estimated wall: ~4 days.
 
 **Datasets:** see [`TRAINING_DATASETS.md`](TRAINING_DATASETS.md) for the complete, per-variant breakdown of every source corpus and every labeled training set used. Quick links to the published Solshine datasets:
 - [`Solshine/gemma-4-e2b-nla-eval-smoke`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-eval-smoke) — 20-row held-out smoke-eval set. Used by the bundled `examples/smoke_test.py`.
