@@ -232,4 +232,184 @@ All raw data, scripts, and per-row outputs are committed in `experiments/v8_nla_
 - `h1_h11_results.json` (10 rows × 4 decoding configs; full untruncated explanations)
 - `h2_injection_fidelity_results.json` (10 rows × 3 injection conditions + 3 repeats)
 - `h5_ar_gibberish_results.json` (10 rows × 4 input-text conditions)
-- `h3_analysis.py`, `h1_h11_eval.py`, `h2_injection_fidelity.py`, `h5_ar_gibberish.py` for reproduction
+- `h13_new_ar_results.json` (10 rows × 4 conditions, against Haiku-relabeled retrained AR)
+- `h14_training_scale_trend_results.json` (5 AR checkpoints × 10 rows × 4 conditions, training-scale trend)
+- `h3_analysis.py`, `h1_h11_eval.py`, `h2_injection_fidelity.py`, `h5_ar_gibberish.py`, `h13_new_ar_eval.py`, `h14_training_scale_trend.py` for reproduction
+
+---
+
+# Addendum 2 (2026-05-13): H13 and H14 ablations — Both refuted
+
+After the original 5-experiment investigation, two further GPU ablations on the local 4 GB GTX 1650 Ti Max-Q tested whether either label quality or step count, within the v0.0.x compute regime, could improve content-sensitivity. Both came back as clean negative results.
+
+## H13: Better AR labels alone, same step budget
+
+Trained a new AR ("Option B AR") on the Claude Haiku persona+audit ar_sft corpus (696 rows) for 60 effective SFT steps (vs v0.0.1's gpt-4o-mini-labeled AR at similar step budget). Re-ran the H5 ablation against the new AR.
+
+**Result:** AV_OUT − EMPTY mean delta moved from baseline +0.0242 to **+0.0174** — slight regression on the mean. Std delta more than doubled (0.022 → 0.049). Two rows (1 and 8) showed strong content-sensitive signals (+0.096 / +0.098, 4-15× larger than baseline), but three rows (6, 7, 9) showed WORSE content-sensitivity; row 6 went actively negative (−0.063, explanation hurt reconstruction). Better labels at v0.0.x scale created more *variability* in content-sensitivity, but did not move the mean.
+
+## H14: More training steps, same labels
+
+Re-ran the H5 ablation against 5 saved AR checkpoints from H13 corresponding to 20, 30, 40, 50, and 60 effective training steps.
+
+| Effective steps | AV_OUT mean cos | EMPTY mean cos | Mean delta |
+|---|---|---|---|
+| 20 | 0.4226 | 0.4048 | +0.0179 |
+| 30 | 0.4508 | 0.4329 | +0.0179 |
+| 40 | 0.4551 | 0.4343 | +0.0207 |
+| 50 | 0.4533 | 0.4350 | +0.0183 |
+| 60 | 0.4409 | 0.4235 | +0.0174 |
+
+**Mean delta is dead flat across the range** (0.0174-0.0207, std across checkpoints ~0.0012). Training more steps does not help. Std delta grows monotonically (0.014 → 0.046) — the AR becomes more variable, not more reliable. Absolute AV_OUT cos peaks at step_000030 (0.455) then plateaus / declines, suggesting mild overfitting on the small 696-row corpus past step 30.
+
+## Combined finding (H13 + H14)
+
+Neither label quality nor step count, alone or in combination within the v0.0.x compute regime, moves the explanation-conditional cos delta. The +0.018-0.024 range is a **regime-bounded ceiling** at the v0.0.x descope (4 GB GPU + ~700-2000-row corpus + ≤60 SFT steps).
+
+This collapses the original 5 root causes into one load-bearing constraint: **insufficient training compute at this descope**. The five original causes (under-trained AV/AR, label diversity, no SFT diversity penalty, cos doesn't measure faithfulness, OpenWebText eval homogeneity) are reorganized:
+
+| Original cause | Post-H13/H14 status |
+|---|---|
+| Under-trained AV/AR at v0.0.x scale | **PRIMARY** (confirmed) |
+| Cos doesn't measure faithfulness (structural projection dominates) | **CO-PRIMARY** (H5; reinforced by H14 — structural cos rises with training while content-conditional component is flat) |
+| Label diversity alone | **REFUTED** (H13) |
+| Step count alone | **REFUTED** (H14) |
+| No SFT diversity penalty | Secondary (untested directly) |
+| OpenWebText eval homogeneity | Refuted (H4) |
+
+## What still might break the ceiling
+
+- **Substantially larger corpus** (v0.1.x is 4,734 rows, 6.8× larger; untested at v0.0.x step scale)
+- **Substantially more SFT steps** (cloud GPU could support 3,000-5,000 steps, 50× current budget; untested)
+- **Larger base model** (Mistral-7B / OLMo-7B at the methodology's intended scale)
+- **Different objective** (Phase 4 RL with faithfulness-aware reward)
+
+H13 and H14 together establish that these are necessary, not just nice-to-have.
+
+---
+
+## Addendum 2026-05-14: H15 + diagnostic evals + comparison to upstream Anthropic NLA
+
+This addendum is **append-only** per the project's results-discipline directive. Earlier H1-H14 analysis is preserved verbatim above; the new findings below extend and partially reframe it.
+
+### Provenance
+
+- H15 (rank-scale ablation): `experiments/v8_nla_local/results/template_collapse_investigation/h15_step_000200_results.json`. Run log: `experiments/v8_nla_local/logs/h15_step_000200_run.log`. Script: `h15_cheap_path_eval.py`. Merged in PR #106 on 2026-05-14.
+- Step_200 diagnostic evals (mode collapse + content match): `experiments/v8_nla_local/results/template_collapse_investigation/step_200_av_outputs_30rows.json`, `step_200_mode_collapse.json`, `step_200_content_match_judge.json`, `step_200_diagnostic_summary.json`. Notes: `notes/STEP_200_DIAGNOSTIC_EVALS_2026-05-13.md`. Content-match judge: claude-sonnet via `claude -p` subprocess (Claude Code subscription credits). PR #107.
+- r=80 LoRA capacity bump (partial trajectory, in-progress): `experiments/v8_nla_local/checkpoints/av_v0_1_x_y_r80/step_000050/`, `step_000100/`, `step_000150/`. Run log: `logs/av_v0_1_y_r80_train.log`. Branch `session/lora_rank_bump_r128`.
+- Upstream Anthropic NLA injection-scale data points: pulled 2026-05-14 from HuggingFace sidecars at `kitft/nla-qwen2.5-7b-L20-av/nla_meta.yaml`, `kitft/nla-gemma3-12b-L32-av/nla_meta.yaml`, `kitft/nla-gemma3-27b-L41-av/nla_meta.yaml`. Source code reference: `kitft/natural_language_autoencoders/nla/schema.py:normalize_activation` and `nla/train_actor.py:526` (`self._nla_vectors = normalize_activation(popped, self._nla_cfg.injection_scale)`).
+
+### H15: v0.1.x cheap-path scale-up (4,734-row corpus, 200 SFT steps, r=64)
+
+Trained a fresh AV on the 6.8× larger Gemini persona+audit corpus for 200 steps, then ran the same H5-style 4-condition ablation (AV_OUT / RANDOM / GIBBER / EMPTY) against the same v0.0.1 AR.
+
+- AV_OUT mean cos: 0.4258
+- EMPTY mean cos: 0.4051
+- **AV_OUT − EMPTY delta: +0.0207** (std 0.0202, n=10)
+- vs v0.0.1 baseline delta +0.0242, v0.0.2 baseline +0.0173
+
+**Result:** 9× more effective row exposures than v0.0.1 (3,200 vs ~220) does NOT move the content-sensitivity delta out of the v0.0.x noise band. The original "Substantially larger corpus" lever, on its own, is REFUTED at this corpus size.
+
+### Diagnostic A — mode collapse at step_000200 (n=30 rows)
+
+Generated 30 AV outputs from `data/stage1/rl.parquet` rows 0-29, computed unique-prefix statistics.
+
+- Unique 30-char prefixes: 10/30
+- Unique 60-char prefixes: 11/30 (strict-threshold verdict: AMBIGUOUS, between 8 and 20)
+- Unique full strings: 23/30
+- Mean pairwise bigram Jaccard: 0.167
+
+Top 60-char prefixes:
+
+| Prefix | Count |
+|---|---|
+| `The model tracks the "unresolved" status of the "unresolved"` | **15 / 30 (50%)** |
+| `The model tracks the "no longer" temporal adverbial phrase,` | 4 / 30 (13%) |
+| (empty string) | 3 / 30 (10%) |
+| (eight other prefixes, each 1 / 30) | 8 / 30 |
+
+The top 3 patterns cover 73% of rows. The strict-threshold AMBIGUOUS verdict is a technicality — in practice this is strong mode collapse, dominated by ~3 templates and a long tail of single-occurrence variations.
+
+### Diagnostic B — content match via Claude (claude -p / Sonnet) on the same 30 rows
+
+For each (source_text, AV_explanation) pair, asked claude-sonnet (via `claude -p` subprocess on Claude Code subscription credits, NOT API billing) to score the AV's explanation against the source text on a 1-5 rubric:
+- 5: strong specific match
+- 4: partial match
+- 3: generic but not contradicted
+- 2: weak / mostly mismatched
+- 1: clear mismatch
+
+Result: **mean score 1.23 / 5**, distribution {1: 25, 2: 4, 4: 1}. **83% of rows judged clear mismatch.** Only one row (row 18, doc_00000019, "negative polarity" template) scored a 4.
+
+### Combined verdict from H15 + Diagnostics A & B
+
+The v0.1.x cheap-path AV at step_000200 produces text that is **syntactically diverse enough to defeat the strict mode-collapse threshold** but **semantically disconnected from source content** in 83% of cases. The +0.0207 H15 delta is consistent with this: the AV's outputs differ enough between rows to nudge round-trip cos slightly above EMPTY, but not enough to give the AR a real content-conditional signal.
+
+This is a stronger result than H13/H14 because it directly demonstrates the AV is **not interpreting the activation** — it's producing pre-baked templates with minor stylistic variation regardless of input.
+
+### H17: r=80 LoRA capacity bump (in progress, partial through step_150)
+
+Original plan was r=128 alpha=256 (3.9× more trainable params than the cheap-path's r=64 / 50M). r=128 OOM'd at optimizer-state init on the 4 GB card; r=96 also OOM'd. r=80 alpha=160 (120M trainable params, 2.4× more than r=64) is the largest LoRA rank that fits.
+
+Loss trajectory so far (max_length=384 vs cheap-path's 512 for VRAM headroom; same corpus, same lr=1e-4, same effective batch 16):
+
+| Step | r=64 (v0.1.x cheap-path) | r=80 (v0.1.y, this run) |
+|---|---|---|
+| 1 | 3.74 | 3.71 |
+| 50 | 2.38 | 2.49 |
+| 100 | 2.24 | 2.50 |
+| 150 | 2.25 | 2.25 |
+
+By step 150, r=80 has converged to within 0.001 of r=64 cheap-path's loss at the same step. **Mid-trajectory signal: the rank bump within the 4 GB feasible range does NOT move the loss floor.** Both runs are converging onto the same 2.20-2.30 plateau.
+
+CAVEAT: r=80 < the original r=128 target. Cannot rule out that a substantially larger rank (3.9× or higher) would move the floor — that requires bigger hardware (4090 rental). Within the rank range we CAN test on this card, capacity is not the bottleneck.
+
+### H18: Injection-scale mismatch with the upstream Anthropic NLA (LIKELY ROOT CAUSE) ⚠
+
+The Anthropic upstream NLA training repo (`kitft/natural_language_autoencoders`, accompanying the Transformer Circuits 2026 post) uses a fixed `injection_scale` hyperparameter that rescales every activation vector to a target L2 norm before injecting it at the embedding layer (`nla/schema.py:normalize_activation`, `nla/train_actor.py:526`).
+
+We use `injection_scale = sqrt(d_model) = sqrt(1536) ≈ 39.2`.
+
+Upstream values, pulled from the released model sidecars:
+
+| Base model | d_model | sqrt(d_model) | Upstream `injection_scale` | Ratio vs sqrt |
+|---|---|---|---|---|
+| Qwen2.5-7B-Instruct | 3584 | 59.9 | **150.0** | 2.5× |
+| **Gemma-3-12B-IT** | **3840** | **62.0** | **80,000.0** | **1290×** |
+| **Gemma-3-27B-IT** | **5376** | **73.3** | **60,000.0** | **818×** |
+| Our Gemma-4-E2B | 1536 | 39.2 | (sqrt(d_model)) | 1× |
+
+The Gemma family in particular uses an injection scale roughly **1000-2000× larger** than `sqrt(d_model)`. The upstream `nla_meta.yaml` files also show the `mse_scale` (used for AR MSE normalization) **is** sqrt(d_model) — so the two scales are intentionally split. We are using sqrt(d_model) for BOTH, which means our AV injection is correctly matched to MSE normalization but is at minuscule magnitude relative to typical Gemma residual-stream activations.
+
+**Why this likely explains the v0.0.x / v0.1.x ceiling end-to-end:**
+
+1. Gemma's residual-stream activations have much larger natural magnitudes than other model families (a known property of Gemma's architecture and embedding scaling). Injecting at sqrt(d_model) ≈ 39.2 places the activation vector at a magnitude the LM-layer attention essentially ignores compared to surrounding learned token embeddings.
+2. This explains the H15 + Diagnostic A/B finding directly: 50% of rows producing identical 60-char openers and mean content-match 1.23/5 is exactly what happens when the model cannot resolve different activation vectors against each other — they all sit within the same near-zero region of embedding space, so the AV falls back to template priors.
+3. It explains the persistent 2.20-2.30 loss plateau: there is a regime-bounded ceiling on extractable information when the input signal is below the noise floor of surrounding embeddings.
+4. It explains why H17's rank bump does not help: LoRA rank cannot recover a signal the model cannot see in the first place.
+
+This finding **reorganizes the root-cause map again**. The five-cause + two-cause synthesis above was the right reading given v0.0.x evidence, but the new comparison to upstream methodology surfaces a sixth cause that we had previously assumed was correctly matched (because sqrt(d_model) is the textbook scaling factor and is what the cheap-path inherited from V8 stage 1 conventions).
+
+| Cause | Post-H18 status |
+|---|---|
+| Under-trained AV/AR at v0.0.x scale (H13/H14 PRIMARY) | **DOWNGRADED — necessary but not sufficient** |
+| Cos doesn't measure faithfulness (H5 CO-PRIMARY) | Unchanged |
+| Label diversity alone (H13 REFUTED) | Unchanged |
+| Step count alone (H14 REFUTED) | Unchanged |
+| Corpus size alone (H15 REFUTED at 4,734 rows / 200 steps) | NEW |
+| LoRA rank capacity within 4 GB regime (H17 partial REFUTED at r=80) | NEW |
+| **Injection-scale mismatch with upstream Gemma NLA (H18 STRONG HYPOTHESIS)** | **NEW — load-bearing, untested** |
+
+### Next experiment (queued)
+
+Train a new cheap-path AV with `injection_scale = 80000` (matching the Gemma-3-12B upstream value, the closest available reference for the Gemma family — Gemma-4-E2B has the same residual-stream norm regime as Gemma-3). Keep everything else fixed (r=64, max_length=512, 4,734-row corpus, lr=1e-4, 200-500 SFT steps). Re-run H15 ablation + the same step_200 diagnostic evals on the final checkpoint.
+
+Pre-registered decision threshold:
+- If new AV_OUT−EMPTY delta moves materially above the v0.0.x noise band (e.g., >0.05) AND content-match judge mean moves above 2.5, **H18 is the root cause** and the prior v0.0.x results are explained by an injection-scale bug, not a fundamental small-model regime limit.
+- If new delta and content match are flat, H18 is refuted; the bottleneck is elsewhere (corpus, base model, RL stage).
+
+### Lesson learned (process)
+
+When reproducing a research methodology, **load every config-time hyperparameter from the upstream model card / sidecar even when it appears to follow textbook conventions**. The Gemma upstream's `injection_scale = 80000` is not derived from the model family's d_model in any obvious way — it is empirically tuned by the original authors and recorded in `nla_meta.yaml` precisely because it is not derivable. Our v0.0.x and v0.1.x runs adopted `sqrt(d_model)` as the injection scale because that is the canonical value for AR MSE normalization and we assumed (incorrectly) that the same value applied to AV injection. The upstream code explicitly separates the two scales (`cfg.injection_scale` vs `cfg.mse_scale`); we conflated them.
+
+This is the kind of mistake that is hard to catch from a paper alone — the published Transformer Circuits write-up describes the methodology but does not call out specific scalar values. The training repo's sidecars are the load-bearing source of truth.
