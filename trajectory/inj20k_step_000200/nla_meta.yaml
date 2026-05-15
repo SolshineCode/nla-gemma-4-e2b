@@ -1,0 +1,50 @@
+kind: nla_model
+role: actor
+version: v0.1.z_inj20k_step_000200
+base_model: google/gemma-4-E2B
+extraction:
+  d_model: 1536
+  layer: 23
+  injection_scale: 20000.0
+  mse_scale: sqrt_d_model
+tokens:
+  injection_token_id: 249568
+  injection_left_neighbor_id: 236813
+  injection_right_neighbor_id: 954
+av_lora:
+  r: 64
+  alpha: 128
+  trainable_params_approx: 50_000_000
+training:
+  loss_at_step_50: 2.5275
+  loss_at_step_100: 2.3740
+  loss_at_step_150: 2.2455
+  loss_at_step_200: 2.3239
+  loss_at_step_160_local_min_seen: 2.0800
+  injection_scale: 20000.0
+  max_length: 512
+  optimizer: adamw_8bit
+  save_interval: 50
+comparison_at_step_200:
+  v0_1_x_cheap_path_r64_inj_sqrt: 2.1954
+  v0_1_y_r80_inj_sqrt: 2.4898
+  v0_1_z_inj20k_r64: 2.3239
+  pre_registered_threshold: |
+    loss < 2.10 at step_200 AND content-match judge mean > 2.5
+    -> H18 (injection_scale=20000) IS the root cause
+  honest_reading: |
+    Raw loss at step_200 (2.32) did NOT cross below 2.10 threshold.
+    Per the loss-only reading, H18 injection_scale=20000 is NOT
+    breaking the plateau at this duration. Step 160 hit a local min
+    of 2.08 (lowest single-step value across all v0.1 runs), but
+    step_200 specifically landed at 2.32 — noise-bound.
+    Real H18 verdict requires the content-quality test:
+      H15 ablation on this checkpoint
+      30-row mode-collapse stats
+      Claude Code content-match judge mean
+    If content match > 1.5 (vs cheap-path's 1.23 and r=80's 1.00),
+    H18 directionally helps but is dominated by other levers
+    (LoRA rank cap, AR truncation, full FT need).
+provenance_notes: |
+  v0.1.z H18 injection-scale experiment, mid-trajectory checkpoint.
+  Training continuing through step 500 unless user redirects.

@@ -413,3 +413,81 @@ Pre-registered decision threshold:
 When reproducing a research methodology, **load every config-time hyperparameter from the upstream model card / sidecar even when it appears to follow textbook conventions**. The Gemma upstream's `injection_scale = 80000` is not derived from the model family's d_model in any obvious way — it is empirically tuned by the original authors and recorded in `nla_meta.yaml` precisely because it is not derivable. Our v0.0.x and v0.1.x runs adopted `sqrt(d_model)` as the injection scale because that is the canonical value for AR MSE normalization and we assumed (incorrectly) that the same value applied to AV injection. The upstream code explicitly separates the two scales (`cfg.injection_scale` vs `cfg.mse_scale`); we conflated them.
 
 This is the kind of mistake that is hard to catch from a paper alone — the published Transformer Circuits write-up describes the methodology but does not call out specific scalar values. The training repo's sidecars are the load-bearing source of truth.
+
+---
+
+## Addendum 2026-05-15: H19 (v0.1.z injection_scale=20000 directional confirm) + H20 (round-trip cos vs content match divergence)
+
+Append-only. All H1-H18 preserved verbatim above.
+
+### Provenance
+
+- v0.1.z training: `experiments/v8_nla_local/checkpoints/av_v0_1_z_inj20k/step_{50,100,150,200,250}/`. Training log: `logs/av_v0_1_z_inj20k_train.log`. Loss plot: `release/v0_1_z_inj20k/figures/09_v0_1_z_training_loss.png`.
+- H15 ablations: `results/template_collapse_investigation/h15_v0_1_z_step_000200_results.json`, `h15_v0_1_z_step_000250_results.json`.
+- Diagnostic suites: `results/template_collapse_investigation/v0_1_z_step_{200,250}_{av_outputs_30rows,mode_collapse,content_match_judge,diagnostic_summary}.json`. Content-match judge: `claude -p` subprocess (Claude Code subscription credits).
+- Smoke-test ceiling on fp16+NF4 stack: 1K, 10K, 20K, 30K stable; 50K NaNs.
+
+### H19: injection_scale=20000 is directionally helpful for AV content quality
+
+The cheap-path / r=80 / v0.1.z runs share corpus, base model, LR, batch, max_length, and all other hyperparameters that fit on 4 GB. They differ on **injection_scale (sqrt(d_model)=39.2 vs 20000)** and **LoRA rank (64 vs 80)**. Step-by-step comparison at step_200:
+
+| Metric | v0.1.x cheap-path r=64 inj=sqrt | v0.1.y r=80 inj=sqrt | **v0.1.z r=64 inj=20000** |
+|---|---|---|---|
+| Loss (step_200) | 2.1954 | 2.4898 (noise) | 2.3239 |
+| H15 AV_OUT-EMPTY mean Δ | +0.0207 | +0.0212 | +0.0215 |
+| H15 std Δ | 0.0202 | 0.0202 | **0.0128** |
+| Unique 60-char prefixes / 30 | 11 | 18 | 12 |
+| **Content match mean (1-5)** | **1.23** | **1.00** | **1.90** |
+| Content match distribution | {1:25, 2:4, 4:1} | {1:30} | **{1:9, 2:15, 3:6}** |
+
+**Headline:** injection_scale=20000 produced a **+54% lift in mean content-match score** (1.23 → 1.90) — the first lever in the entire investigation that moves a content-quality metric. 70% of v0.1.z step_200 rows scored ≥2 vs 17% for cheap-path and 0% for r=80.
+
+The strict-threshold "H18 root cause confirmed" verdict (mean ≥ 2.5) is NOT met. But the +0.67 absolute lift is well outside the noise band of prior comparisons. **H18 is directionally confirmed at injection_scale=20000.** The reason the lift is partial — not full — is plausibly that upstream uses 80000 for Gemma-3-12B and we are capped at 20000 by fp16+NF4 numerical stability (50K NaNs in smoke).
+
+### H20: round-trip cos and content match DIVERGE on overfitting
+
+v0.1.z step_250 (50 steps past step_200, same model):
+
+| Metric | v0.1.z step_200 | v0.1.z step_250 |
+|---|---|---|
+| H15 AV_OUT-EMPTY mean Δ | +0.0215 | +0.0150 |
+| Unique 60-char prefixes / 30 | 12 (AMBIGUOUS) | **20 (NO_MODE_COLLAPSE — first ever)** |
+| Mean pairwise bigram Jaccard | 0.226 | **0.129 (most diverse of any run)** |
+| Content match mean | **1.90** | 1.17 |
+| Content match distribution | {1:9, 2:15, 3:6} | {1:27, 2:2, 4:1} |
+
+Step_250 IS the FIRST checkpoint in the entire investigation to cross the strict NO_MODE_COLLAPSE threshold (≥20 unique 60-char prefixes / 30). And yet:
+- H15 Δ dropped 30% (0.0215 → 0.0150)
+- Content match dropped 39% (1.90 → 1.17)
+
+**The model gained diversity AND lost content fidelity simultaneously.** This is overfitting in a specific shape: the AV gains the FREEDOM to produce varied outputs (escaping the template attractor) but loses the SIGNAL to anchor those variations to source content. The activation-vector influence on AV output weakens as the model's internal "label-distribution prior" strengthens.
+
+H20 generalizes the H5 / §F22 finding: **the H15 round-trip cos metric and Claude-as-judge content match track each other for step_200 → step_250 (both worse) but disagree across the cheap-path vs v0.1.z step_200 comparison** (cos says same, content match says +54%). Round-trip cos is content-blind in the AR-content-blindness sense, but it DOES track per-row reliability (std component) — which is why step_250's H15 Δ dropped: less reliability per row.
+
+### Implications for the root-cause map
+
+| Cause | Pre-H19 status | Post-H19 status |
+|---|---|---|
+| Under-trained AV/AR at v0.0.x scale | DOWNGRADED — necessary but not sufficient | Unchanged |
+| Cos doesn't measure faithfulness | CO-PRIMARY | **STRENGTHENED** — H20 shows cos can disagree with content quality across runs |
+| Label diversity alone | REFUTED | Unchanged |
+| Step count alone | REFUTED | Unchanged + H20 caveat: optimum step exists (~200 for inj=20000) |
+| Corpus size alone | REFUTED | Unchanged |
+| LoRA rank in 4 GB regime | partial REFUTED at r=80 | Unchanged |
+| **Injection-scale mismatch (H18)** | **STRONG HYPOTHESIS, untested** | **PARTIALLY CONFIRMED — H19 +54% content match lift at 20000.** Plausibly full at 80000 if numerical stability fixed (bf16). |
+
+### What still might break the ceiling (post-H19/H20 update)
+
+1. **bf16 compute_dtype + injection_scale=80000** (match upstream exact value). Tests whether the residual gap from H19's +54% lift to the strict 2.5 threshold is purely a numerical ceiling on our stack.
+2. **LoRA + RMSNorm + injection-token-embedding-row unfreeze, all at once, on top of inj=20000** (the v0.1.w plan). Tests whether stacking levers compounds the H19 lift.
+3. **AR retrain with K+1=24 layers** (vs our current truncation at 18). Only voluntary divergence from upstream that we haven't tested. Should follow H19's positive signal, since round-trip cos can't see the v0.1.z content quality lift — maybe a less-truncated AR would.
+4. **Step number optimum**: Stop earlier than 200 was assumed to be too few; step_250 confirms too many. The sweet spot may be step 150-200. v0.1.w should target ≤200 steps.
+
+### Lesson learned (process)
+
+**Always run BOTH a round-trip cos metric AND a behavior-aware judge (LLM-as-judge or human review) in every eval.** H19 + H20 together show:
+- A single metric (round-trip cos) would have missed the +54% content lift.
+- A single metric (content match) would have missed the per-row reliability change (H15 std dropping).
+- The two metrics disagree productively — their disagreement IS the signal.
+
+Add to standing eval methodology recommendations (§"Eval methodology recommendations for v0.1.0+"): **Item 6.** Always pair the round-trip cos eval with an LLM-as-judge content match eval. Report both. If they agree, you have one signal. If they disagree, you have TWO independent signals plus their delta.

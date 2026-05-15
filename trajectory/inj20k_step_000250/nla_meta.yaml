@@ -1,0 +1,31 @@
+kind: nla_model
+role: actor
+version: v0.1.z_inj20k_step_000250
+base_model: google/gemma-4-E2B
+extraction:
+  d_model: 1536
+  layer: 23
+  injection_scale: 20000.0
+  mse_scale: sqrt_d_model
+tokens:
+  injection_token_id: 249568
+  injection_left_neighbor_id: 236813
+  injection_right_neighbor_id: 954
+av_lora:
+  r: 64
+  alpha: 128
+training:
+  loss_at_step_50: 2.5275
+  loss_at_step_100: 2.3740
+  loss_at_step_150: 2.2455
+  loss_at_step_200: 2.3239
+  loss_at_step_250: 2.4040
+  injection_scale: 20000.0
+  max_length: 512
+  save_interval: 50
+honest_reading: |
+  Loss trajectory through step_250 is flat-with-noise in the 2.20-2.40 band.
+  Linear regression on raw loss steps 100-250 would have slope ~0 and R^2 ~0.
+  Per CLAUDE.md honest-accuracy threshold, this is FLAT — not descending.
+  H18 injection_scale=20000 has NOT broken the 4 GB regime plateau on raw loss.
+  Content-quality diagnostics required to determine if outputs improved.

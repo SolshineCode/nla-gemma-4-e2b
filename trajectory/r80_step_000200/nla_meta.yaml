@@ -1,0 +1,85 @@
+kind: nla_model
+role: actor
+version: v0.1.y_r80_step_000200_FINAL
+base_model: google/gemma-4-E2B
+extraction:
+  d_model: 1536
+  layer: 23
+  injection_scale: sqrt_d_model
+  mse_scale: sqrt_d_model
+  injection_scale_note: |
+    Trained at injection_scale = sqrt(D_MODEL) = 39.19. UPSTREAM ANTHROPIC
+    NLA uses 80,000 for Gemma-3-12B and 60,000 for Gemma-3-27B (1000-2000x
+    larger). This injection-scale mismatch (H18) is the hypothesized
+    load-bearing root cause of the v0.0.x / v0.1.x content-blindness.
+    See ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md H18 section.
+tokens:
+  injection_token_id: 249568
+  injection_left_neighbor_id: 236813
+  injection_right_neighbor_id: 954
+av_lora:
+  r: 80
+  alpha: 160
+  target_modules_regex: 'model\.language_model\.layers\.\d+\.(self_attn|mlp)\.(q_proj|k_proj|v_proj|o_proj|gate_proj|up_proj|down_proj)'
+  trainable_params_approx: 120_000_000
+training:
+  lr: 1.0e-4
+  max_steps_configured: 500
+  steps_completed_at_this_checkpoint: 200
+  steps_completed_overall: 200
+  early_stopping: true
+  early_stopping_reason: |
+    Stopped at step 200 (not configured 500) by user direction. Reason:
+    mid-trajectory verdict at step_150 (r=80 loss=2.2514 vs r=64 cheap-path
+    step_150 loss=2.2504 — converged within 0.001) showed the LoRA rank
+    bump within the 4 GB feasible range does NOT move the loss floor.
+    Combined with H18 (injection-scale mismatch with upstream Anthropic
+    NLA for the Gemma family), the GPU was redirected to test the
+    injection_scale=80000 lever, which is the most-likely-to-break-the-
+    floor experiment given the upstream comparison.
+  loss_at_step_50: 2.4855
+  loss_at_step_100: 2.5038
+  loss_at_step_150: 2.2514
+  loss_at_step_200: 2.4898
+  loss_note: |
+    Step-by-step noise is high (range ~2.1-2.5 in the plateau zone).
+    Step_200 single-step loss of 2.49 is noise; surrounding window (steps
+    180-199) averaged ~2.20-2.25, consistent with cheap-path's plateau.
+  micro_batch: 1
+  grad_accum: 16
+  effective_batch: 16
+  max_length: 384
+  max_length_note: |
+    Reduced from 512 (used in v0.1.x cheap-path) to 384 for VRAM headroom
+    at r=80. Some longer training labels truncated. Could be a confounder
+    in the r=64 vs r=80 comparison — but the loss-floor convergence is
+    consistent across both runs regardless.
+  optimizer: adamw_8bit
+  save_interval: 50
+training_data:
+  path: experiments/v8_nla_local/data/stage3_v0_1_full/av_sft.parquet
+  n_rows: 4734
+  source: Gemini CLI with persona+audit pipeline
+  source_families: 9
+eval_provenance:
+  trajectory_evals: |
+    Same eval suite as v0.1.x cheap-path step_000200:
+    - H15-style ablation paired with v0.0.1 AR (Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1)
+    - 30-row mode-collapse stats
+    - Claude Code content-match judge (mean score)
+    Results to be saved at:
+      experiments/v8_nla_local/results/template_collapse_investigation/h15_r80_step_000200_results.json
+      experiments/v8_nla_local/results/template_collapse_investigation/r80_step_200_diagnostic_summary.json
+provenance_notes: |
+  v0.1.y r=80 LoRA capacity-bump experiment endpoint. Direct response to
+  step_200 diagnostic evals (PR #107) which showed the v0.1.x cheap-path
+  AV produces semantically-disconnected templates (content match 1.23/5).
+
+  Original target was r=128 alpha=256 (3.9x trainable params over r=64);
+  r=128 OOM'd at optimizer-state init on the 4 GB card; r=96 also OOM'd.
+  r=80 alpha=160 (120M trainable params, 2.4x more than r=64's 50M) was
+  the largest LoRA rank that fit.
+
+  Mid-trajectory verdict (step_150): rank bump within the 4 GB feasible
+  range does NOT break the loss-floor plateau. Pivoting GPU to test the
+  injection_scale=80000 (H18) lever next.
