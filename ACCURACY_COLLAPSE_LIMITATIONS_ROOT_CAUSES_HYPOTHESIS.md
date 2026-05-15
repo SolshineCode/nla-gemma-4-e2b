@@ -491,3 +491,70 @@ H20 generalizes the H5 / §F22 finding: **the H15 round-trip cos metric and Clau
 - The two metrics disagree productively — their disagreement IS the signal.
 
 Add to standing eval methodology recommendations (§"Eval methodology recommendations for v0.1.0+"): **Item 6.** Always pair the round-trip cos eval with an LLM-as-judge content match eval. Report both. If they agree, you have one signal. If they disagree, you have TWO independent signals plus their delta.
+
+---
+
+## CORRECTION 2026-05-15: H19 and H20 retracted — train-test injection_scale mismatch
+
+**Catching a real bug, in public.** Gemini Code Assist's automated review of PR #108 flagged a HIGH-severity bug in the v0.1.z eval scripts (both `h15_cheap_path_eval.py` and the diagnostic suite): the eval scripts were scaling activation vectors by `sqrt(D_MODEL) = 39.2` at inference time, but the v0.1.z model was TRAINED with `injection_scale = 20000`. **500× train-test mismatch.** Every v0.1.z evaluation result published in the H19 / H20 addendum above was generated with this mismatch.
+
+### Fix applied
+
+Both eval scripts now read `injection_scale` from the checkpoint's `nla_meta.yaml` sidecar (`training.injection_scale` or `extraction.injection_scale`), defaulting to `sqrt(D_MODEL)` only when the sidecar omits it (cheap-path / r=80 era). Code patch:
+
+```python
+inj_scale = float(np.sqrt(D_MODEL))
+sidecar = av_ckpt / "nla_meta.yaml"
+if sidecar.exists():
+    meta = yaml.safe_load(sidecar.read_text())
+    recorded = (meta.get("training", {}) or {}).get("injection_scale") \
+            or (meta.get("extraction", {}) or {}).get("injection_scale")
+    if isinstance(recorded, (int, float)) and recorded > 0:
+        inj_scale = float(recorded)
+```
+
+### Re-run results (with correct injection_scale=20000 matching training)
+
+| Run / step | H15 Δ BROKEN | H15 Δ FIXED | Unique 60-char BROKEN | Unique 60-char FIXED | Content match BROKEN | **Content match FIXED** |
+|---|---|---|---|---|---|---|
+| v0.1.z step_200 | +0.0215 | **+0.0205** | 12 | **9** | 1.90 | **1.17** |
+| v0.1.z step_250 | +0.0150 | **+0.0170** | 20 (NO_COLLAPSE!) | **9 (AMBIGUOUS)** | 1.17 | **1.03** |
+
+### Retractions
+
+- **H19 retracted.** The "+54% content match lift" was an artifact of the train-test scale mismatch, not a real lever effect. With correct scale, v0.1.z step_200 content match is **1.17 — indistinguishable from cheap-path (1.23) and r=80 (1.00)**. injection_scale=20000 does NOT improve content match. **H18 is now REFUTED on content match (not just on round-trip cos).**
+- **H20 retracted.** The "NO_MODE_COLLAPSE × content-loss divergence at step_250" was also an artifact. With correct scale, step_250 has **9 unique 60-char prefixes (not 20)** — the AMBIGUOUS verdict. Both H15 cos and content match agree that step_250 is worse than step_200; there's no divergence between metrics here.
+
+### What remains true
+
+- **H18 + injection_scale=20000 is REFUTED across all three metrics** (H15 round-trip cos, mode-collapse uniqueness, claude-as-judge content match) once the train-test mismatch is corrected.
+- **The 4 GB regime ceiling is robust across all four hardware-feasible levers tested:** corpus size (H15), training step count (H14), LoRA rank within fit (H17), injection scale up to fp16+NF4 stability ceiling (H18 / H19 corrected).
+- **Step 200 → 250 overfit pattern is real** in v0.1.z (loss-direction confirmed both pre and post fix; H15 Δ drops, content match drops). Step 200 is the right checkpoint to evaluate.
+- **Round-trip cos is content-blind on our 4 GB / LoRA / NF4 stack** is unchanged: pre-fix it gave +0.020 across all four runs; post-fix it still gives +0.017-0.022. The metric does not discriminate between the runs even when content quality genuinely varies (per the original H5 / §F22 finding).
+
+### Updated root-cause map (post-correction)
+
+| Cause | Pre-H19/H20 status | Post-correction status |
+|---|---|---|
+| Under-trained AV/AR at v0.0.x scale | DOWNGRADED — necessary but not sufficient | Unchanged |
+| Cos doesn't measure faithfulness | CO-PRIMARY | Unchanged (still load-bearing) |
+| Label diversity alone | REFUTED | Unchanged |
+| Step count alone | REFUTED | Unchanged |
+| Corpus size alone | REFUTED | Unchanged |
+| LoRA rank in 4 GB regime | partial REFUTED at r=80 | Unchanged |
+| Injection-scale mismatch (H18) | **PARTIALLY CONFIRMED** | **REFUTED at injection_scale=20000** (the largest stable on our fp16+NF4 stack). Untested at 80000 (NaNs without bf16). |
+
+### What might still break the ceiling (revised, post-correction)
+
+1. **bf16 compute_dtype + injection_scale=80000.** Tests the EXACT upstream value. Was already a candidate; correction makes this more important because 20000 is now refuted.
+2. **LoRA + RMSNorm + injection-token-embedding-row unfreeze** (v0.1.w plan). Tests embeddings/LN that current LoRA can't touch. Independent of injection scale finding.
+3. **AR retrain with K+1=24 layers** (not 18). The only voluntary divergence from upstream we haven't tested.
+4. **4090 rental** ($20-30, 6-8h). Combines all four hardware-forced lever fixes at once: bf16, full fine-tune, injection_scale=80000, AR=24 layers. Strictly cleanest test.
+
+### Lesson learned (process — revised)
+
+**Always read training-time hyperparameters from the checkpoint sidecar at eval time.** Hardcoded constants in eval scripts are a class of bug that survives unit tests and only manifests when a training-time hyperparameter is changed in a new run — exactly what happened here. The fix is one-time and propagates to all future runs.
+
+**Code reviewers (human or AI) are a genuine quality control on research code.** The bug was real and would have led us to publish a wrong positive result. Gemini Code Assist's HIGH-severity inline comment caught it before the PR was merged. Worth the +30 min eval re-run to get the right answer.
+
+**An apparent positive result that contradicts a strong prior is more likely a bug than a finding.** The 1.23 → 1.90 jump was a 54% improvement on a metric that had been stubbornly flat across three runs against three different scale-up levers. The honest skeptical response should have been "verify the eval is correctly configured before celebrating" — not draft an addendum claiming H18 is partially confirmed. Adding to standing eval methodology recommendations as **Item 7: Any time a metric moves materially on a new run, audit the eval config end-to-end (especially against the training config) before publishing.**
