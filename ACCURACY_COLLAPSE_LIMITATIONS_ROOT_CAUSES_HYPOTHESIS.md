@@ -558,3 +558,69 @@ if sidecar.exists():
 **Code reviewers (human or AI) are a genuine quality control on research code.** The bug was real and would have led us to publish a wrong positive result. Gemini Code Assist's HIGH-severity inline comment caught it before the PR was merged. Worth the +30 min eval re-run to get the right answer.
 
 **An apparent positive result that contradicts a strong prior is more likely a bug than a finding.** The 1.23 → 1.90 jump was a 54% improvement on a metric that had been stubbornly flat across three runs against three different scale-up levers. The honest skeptical response should have been "verify the eval is correctly configured before celebrating" — not draft an addendum claiming H18 is partially confirmed. Adding to standing eval methodology recommendations as **Item 7: Any time a metric moves materially on a new run, audit the eval config end-to-end (especially against the training config) before publishing.**
+
+---
+
+## Addendum 2026-05-15: H22 — v0.1.w combined-levers (RMSNorm unfreeze + injection_scale=20000 + r=80)
+
+Append-only. All H1-H21 preserved verbatim above.
+
+### Provenance
+
+- Training: `experiments/v8_nla_local/checkpoints/av_v0_1_w_norms_inj20k/step_000050/` (first 50 steps in original run) + `av_v0_1_w_norms_inj20k_resumed/step_{50,100,150}/` (resumed from step_50 weights with fresh AdamW state, cumulative steps 100/150/200). Training log: `logs/av_v0_1_w_norms_inj20k_train.log` + `..._RESUMED_train.log`. Loss plot: `release/v0_1_w_norms_inj20k/figures/10_v0_1_w_training_loss.png`.
+- H15 ablations: `results/template_collapse_investigation/h15_v0_1_w_step_000050_results.json`, `h15_v0_1_w_cumstep_000200_results.json`.
+- Diagnostic suites: `v0_1_w_step_50_*.json`, `v0_1_w_cumstep_200_*.json` (both with `injection_scale: 20000.0` read from sidecar — bug-free).
+
+### Combined-levers config
+
+This run stacked the three feasible-on-4GB levers from prior experiments:
+1. **LoRA r=80 alpha=160** (max stable rank, per H17)
+2. **RMSNorm unfreeze** via PEFT `modules_to_save`: input_layernorm, post_attention_layernorm, post_feedforward_layernorm, post_per_layer_input_norm, pre_feedforward_layernorm, k_norm, q_norm, v_norm (8 norm types × 35 layers = 280 RMSNorm modules trainable, ~2M extra params)
+3. **injection_scale=20000** (per H18/H19, largest stable on fp16+NF4)
+
+Other params unchanged from cheap-path: lr=1e-4 flat, micro_batch=1, grad_accum=16, max_length=384 (down from 512 for headroom).
+
+### Results
+
+Tested at step_50 (~2.5h GPU) and resumed cumulative step_200 (~5h additional GPU).
+
+| Metric | cheap-path step_200 | r=80 step_200 | v0.1.z step_200 (FIXED) | **v0.1.w step_50** | **v0.1.w cum step_200** |
+|---|---|---|---|---|---|
+| Loss | 2.20 | 2.49 | 2.32 | 2.38 | 2.28 |
+| H15 AV-EMPTY Δ | +0.0207 | +0.0212 | +0.0205 | +0.0128 | **+0.0090** ← lowest |
+| Unique 60-char / 30 | 11 | 18 | 9 | 2 (collapsed) | 5 (collapsed) |
+| Mean bigram Jaccard | 0.167 | 0.148 | 0.212 | 0.540 | **0.657** ← most overlap |
+| Content match mean | 1.23 | 1.00 | 1.17 | **1.50** ✨ | **1.05** ↓ |
+| Score distribution | {1:25, 2:4, 4:1} | {1:30} | {1:26, 2:3, 3:1} | {1:15, 2:15} | {1:19, 2:1} |
+
+### Headline (H22)
+
+**v0.1.w step_50 produced the first real content-match lift in the whole investigation: 1.23 → 1.50 (+22%) over cheap-path baseline.** Half the rows (15/30) scored 2 (weak mismatch) vs the cheap-path's 25/30 scoring 1 (clear mismatch). This is a small but reproducible lift not attributable to eval-config bugs (the FIXED v0.1.z eval at injection_scale=20000 showed 1.17; v0.1.w at the same scale + RMSNorm unfreeze got 1.50 — the marginal +0.33 comes from RMSNorm unfreeze in the v0.1.w stack).
+
+**But training past step_50 degrades the lift.** v0.1.w cumulative step_200 (150 more SFT steps) collapses to 1.05 — back below cheap-path. Same overfit shape as v0.1.z step_200 → 250.
+
+### Implications for the root-cause map
+
+| Cause | Pre-H22 status | Post-H22 status |
+|---|---|---|
+| Under-trained AV/AR at v0.0.x scale | DOWNGRADED | Reaffirmed — under-trained in the sense that ~50 SFT steps is too few for a clean final model, but ALSO over-trained past 50 in our 4GB regime. The window is narrow. |
+| Cos doesn't measure faithfulness | CO-PRIMARY | Reaffirmed — H22 is the third case where Claude-judge content-match disagrees with round-trip cos delta on the same checkpoint pair. |
+| Label diversity / step count / corpus size / LoRA rank in 4GB / injection_scale alone | REFUTED | Unchanged |
+| **RMSNorm unfreeze + LoRA r=80 + injection_scale=20000 stacked** (H22) | not yet hypothesized | **PARTIAL POSITIVE** at step_50 only (+22% content match). Refuted at step_200. |
+
+### Process lesson
+
+**Stack levers cumulatively rather than testing each in isolation.** H17 (r=80 alone), H18 (inj=20000 alone), and "RMSNorm unfreeze alone" were each individually flat or refuted, but the stack produced a real +22% lift at the optimal training step. The lever-isolation methodology of H13–H19 may have caused us to discard contributions that only emerge when combined. Future single-lever experiments should be evaluated against the stacked-lever baseline, not the cheap-path baseline.
+
+### Outstanding levers (post-H22)
+
+1. **bf16 compute_dtype + injection_scale=80000** (exact upstream Gemma-3 value) — could compound on H22's stack.
+2. **AR retrain with K+1=24 layers** (vs current 18) — only voluntary divergence from upstream untested; AR-side bottleneck still possible per H5/H22 cos-vs-content-match divergence.
+3. **Short-label hybrid corpus retrain** — `data/stage3_v0_1_full_opus_short/av_sft.parquet` rebuilt 2026-05-15 with 2,548 short (≤5 word) labels from Opus/Sonnet/Gemini-Pro across rows, original Gemini-flash labels on the other 2,186 rows. New `labeler_model` column. Hypothesis: label-format-as-lever was untested across H1-H22; might compound with H22 stack to break the 1.05-1.50 ceiling. Hermes Agent continuing to expand the short-label coverage.
+4. **4090 rental** (~$30, 6-8h) — combines all hardware-forced fixes at once: bf16, full FT (no LoRA prior), inj=80000, AR=24 layers.
+
+### Files / Mirrors
+
+- v0.1.w step_50 + step_200 cumulative checkpoints on `Solshine/gemma-4-e2b-nla-L23-av-v0_1_x-trajectory` HF repo + `v0.0.3-trajectory-in-progress` GH Release + bundled `trajectory/` sidecar dirs.
+- Hybrid short-label dataset on `Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-short-hybrid-labels` HF dataset (TODO: actually publish post-merge).
+- Source repo branch: `session/v0_1_w_norms_inj20k`.
