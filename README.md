@@ -1,6 +1,21 @@
 # NLA-Gemma-4-E2B
 
-**First open-source Natural Language Autoencoder (NLA) released independently of Anthropic's NLA team.** Trained end-to-end on a 4 GB consumer GPU. The methodology contribution at small-model scale to democratize NLA research. (Training to improve accuracy ongoing)
+**First open-source Natural Language Autoencoder (NLA) released independently of Anthropic's NLA team.** Trained end-to-end on a 4 GB consumer GPU. The methodology contribution at small-model scale to democratize NLA research.
+
+> ## ⚠ Headline finding (2026-05-16, post-H23 update)
+>
+> **None of the AV checkpoints in this release produce activation-conditioned outputs in practice.** All checkpoints (v0.0.1, v0.0.2, and the 8-subfolder v0.1.x trajectory) converge to fixed-template outputs (paragraph form in v0.0.x/v0.1.x; short-tag form in v0.1.v) that are drawn from the training prior rather than from the injected activation vector. A Hillary Clinton rally activation produces the same AV output as a Casino Blackjack game activation.
+>
+> Five independent hardware-feasible levers were tested on this 4 GB regime, all refuted:
+> 1. **Corpus size** (4,734-row scale-up): H15 refuted
+> 2. **SFT step count** (50 → 250): H14 refuted; step_50 sweet spot, overfits past
+> 3. **LoRA rank within 4 GB** (r=64 → r=80; r=96+ OOMs): H17 refuted
+> 4. **Injection scale** (sqrt(d)→20000; 50K+ NaNs on fp16+NF4): H18/H19 refuted
+> 5. **Label format** (paragraph → ≤5-word short tags via Opus/Sonnet/Gemini/Deepseek hybrid corpus): H23 refuted
+>
+> The full root-cause investigation (H1-H23 numbered findings, ~500 lines) is in [`ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md`](ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md). **Read it before using these models for any interpretability work.** The published checkpoints are useful for methodology replication, infrastructure benchmarking, and as a negative-result reference; they are NOT useful for actually interpreting Gemma-4-E2B activations.
+>
+> Path to a functional NLA at this methodology likely requires hardware beyond 4 GB: either bf16 + full fine-tune (no LoRA prior) + injection_scale=80000 (matching upstream Anthropic Gemma-3-12B), or a 4090 rental for 6-8 hours (~$30) to combine all four hardware-forced lever fixes at once.
 
 <img width="2752" height="1536" alt="Gemini_Generated_Image_gqbm6agqbm6agqbm" src="https://github.com/user-attachments/assets/7c2dbb86-03a2-4fb5-b234-b7645175825a" />
 
