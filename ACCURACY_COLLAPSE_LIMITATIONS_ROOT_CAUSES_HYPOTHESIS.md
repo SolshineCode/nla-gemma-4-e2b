@@ -624,3 +624,84 @@ Tested at step_50 (~2.5h GPU) and resumed cumulative step_200 (~5h additional GP
 - v0.1.w step_50 + step_200 cumulative checkpoints on `Solshine/gemma-4-e2b-nla-L23-av-v0_1_x-trajectory` HF repo + `v0.0.3-trajectory-in-progress` GH Release + bundled `trajectory/` sidecar dirs.
 - Hybrid short-label dataset on `Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-short-hybrid-labels` HF dataset (TODO: actually publish post-merge).
 - Source repo branch: `session/v0_1_w_norms_inj20k`.
+
+---
+
+## Addendum 2026-05-16: H23 — short-label hybrid corpus retrain (v0.1.v)
+
+Append-only. All H1-H22 preserved verbatim above.
+
+### Provenance
+
+- Training: `experiments/v8_nla_local/checkpoints/av_v0_1_v_short_hybrid/step_{50,100}/`. Log: `logs/av_v0_1_v_short_hybrid_train.log`.
+- Corpus: `experiments/v8_nla_local/data/stage3_v0_1_full_opus_short/av_sft.parquet` — 4,734 rows with 92.5% short labels (1,852 Opus + 1,125 Sonnet + 1,252 Deepseek + 147 Gemini-Pro = 4,376 short) and 358 fallthrough to original Gemini-flash paragraphs. New `labeler_model` column. Mirrored on `Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-short-hybrid-labels` HF dataset.
+- Evals: `h15_v0_1_v_step_000050_MINTOK_results.json`, `h15_v0_1_v_step_000100_results.json`, and diagnostic suite at `v0_1_v_step_50_*.json`.
+- Critical eval fix: `min_new_tokens=15` patch in `h15_cheap_path_eval.py` and `v0_1_v_step_50_diagnostic_evals.py` — short-label SFT teaches the AV that EOS-immediate is near-optimal (label = `<explanation>\n{≤5 words}\n</explanation>` is ~12 tokens total; greedy decoding picks the EOS branch). Without the floor, ALL 10 step_50 H15 outputs and 8/10 step_100 outputs were empty strings.
+
+### Config (single-variable change vs v0.1.w)
+
+Same v0.1.w combined-levers config — r=80 LoRA + alpha=160, RMSNorm unfreeze on all 8 norm types × 35 layers, injection_scale=20000, max_length=384, lr=1e-4, micro_batch=1, grad_accum=16, AdamW8bit. **Only the training corpus changed** (short-label hybrid vs original Gemini-paragraph corpus).
+
+### Results
+
+| Metric | cheap-path step_200 | v0.1.w step_50 | **v0.1.v step_50 MINTOK** |
+|---|---|---|---|
+| Loss | 2.20 | 2.38 | 1.90 (not directly comparable — different label token count) |
+| H15 AV-EMPTY Δ | +0.0207 | +0.0128 | +0.0121 |
+| Unique 60-char / 30 | 11 | 2 | 7 |
+| Mean bigram Jaccard | 0.167 | 0.540 | 0.359 |
+| Content match mean | 1.23 | **1.50** | **1.07** ↓ |
+| Score distribution | {1:25, 2:4, 4:1} | {1:15, 2:15} | {1:28, 2:2} |
+| Verdict | mostly mismatched | weak mismatch dominant | CONFIRMED_MODE_COLLAPSE × LOW_CONTENT_MATCH |
+
+### Qualitative finding
+
+**v0.1.v step_50 produced TWO ATTRACTORS covering 30 wildly different source documents:**
+- "kidney transplant waiting list" (drawn from PKU-SafeRLHF medical-ethics training rows)
+- "AI deception detection" (drawn from Anthropic discrim-eval / persuasion training rows)
+
+Examples:
+- Hillary Clinton campaign rally activation → "AI deception detection"
+- Casino Blackjack 21 game activation → "kidney transplant waiting list"
+- Space exploration document activation → "AI deception detection"
+- US airstrikes in Syria activation → "kidney transplant waiting list"
+- Stanley Williams NFL Draft activation → "AI deception detection"
+
+The AV is producing FROM its training prior, not FROM the activation. Same fundamental content-blindness as v0.1.w, just in short-tag form rather than paragraph form. The "format" change worked (short tags instead of paragraphs); the "content" failure persists (no activation-conditional discrimination).
+
+### H23 verdict
+
+**Label format alone does not break the 4 GB regime ceiling.** Short ≤5-word labels produce a short-tag AV, but the AV's output remains drawn from the training prior rather than conditioned on the activation. The +22% content-match lift seen in v0.1.w step_50 was NOT replicable when only label format changed — in fact v0.1.v scored LOWER on content match (1.07 vs 1.50).
+
+This adds a 5th refuted single-lever experiment to the running total. Combined with H15 (corpus size), H14 (step count), H17 (LoRA rank in 4 GB), and H18/H19 (injection scale to 20000), every lever feasible-on-4GB has been refuted alone or in stack.
+
+### Process finding: greedy decoding + short-label SFT = EOS-immediate failure mode
+
+When training on short labels (≤5 word tags) using cross-entropy with the standard `<explanation>\n{tag}\n</explanation>` template, the AV converges to a near-optimal local minimum where EOS-immediate is preferred. Greedy decoding (do_sample=False, no min_new_tokens) then picks that branch → empty AV outputs.
+
+This is a **previously-unseen failure mode that breaks the H15 eval pipeline** (AV_OUT vs EMPTY conditions become identical when AV_OUT is itself empty). Required intervention: `min_new_tokens=15` floor on the eval-time `generate()` call.
+
+Adding to standing eval methodology recommendations as **Item 8: Always set `min_new_tokens` floor when evaluating AVs trained on short labels.** A reasonable floor is the expected token count of the label format (≤5 words + tags ≈ 12-15 tokens for our format).
+
+### Updated root-cause map (post-H23)
+
+| Cause | Status |
+|---|---|
+| Under-trained AV/AR at 4GB scale | Necessary but not sufficient (H14/H17/H22/H23 collectively) |
+| Cos doesn't measure faithfulness (H5/H20) | Reaffirmed (H23 round-trip cos and content-match agree this time, but the prior pattern of disagreement on capacity bumps still holds) |
+| Label diversity (H13) | REFUTED |
+| Step count (H14) | REFUTED |
+| Corpus size (H15) | REFUTED |
+| LoRA rank in 4 GB (H17) | REFUTED |
+| Injection scale (H18/H19) | REFUTED at 20000 (largest stable on fp16+NF4) |
+| RMSNorm unfreeze stack (H22) | PARTIAL POSITIVE at step_50 (+22% metric, no qualitative win); refuted past step_50 |
+| **Label format (H23)** | **REFUTED. Short labels produce short-tag AVs but content-blindness persists.** |
+
+### What's left
+
+The lever space accessible on this 4 GB GTX 1650 Ti Max-Q is **exhausted**. Remaining experiments require either:
+1. **bf16 compute_dtype** to push injection_scale higher (current ceiling 20K NaNs at 50K). Requires Triton kernels that work on Compute Capability 7.5+ which this card barely supports; not clearly possible without testing.
+2. **AR retrain with K+1=24 layers** (vs current 18). Only voluntary divergence from upstream we haven't tested. Would need ~6h GPU on a fresh AR. Could test AR-side bottleneck independent of AV.
+3. **4090 rental** (~$30, 6-8h). Combines bf16 + full FT + inj=80000 + AR=24 layers. Clean test of all hardware-forced fixes at once.
+
+The publishable story is now: **on a 4 GB consumer GPU regime with NF4 quantization + LoRA, the v0.0.x / v0.1.x NLA methodology produces AVs that converge to fixed templates (paragraph or short-tag) drawn from the training prior, regardless of which single lever is varied (corpus size, training duration, LoRA rank, injection scale, or label format).** This is consistent with the H5 finding that the round-trip-cos metric is content-blind on this stack — but H23 adds the AV-side observation that the AV ITSELF is also content-blind (not just the AR). Hardware-forced quantization + LoRA imposes a hard floor that none of these levers can break.
