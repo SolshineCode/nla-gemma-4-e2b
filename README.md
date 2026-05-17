@@ -1,6 +1,6 @@
 # NLA-Gemma-4-E2B
 
-**The first open-source Natural Language Autoencoder (NLA) released independently of Anthropic's NLA team.** Trained end-to-end on a single 4 GB consumer GPU. Open weights, open data, open methodology. *(Work in progress — actively iterating on training methodology and content-fidelity evaluation.)*
+**The first open-source Natural Language Autoencoder (NLA) released independently of Anthropic's NLA team.** Trained end-to-end on a single 4 GB consumer GPU. Open weights, open data, open methodology. *(NLA weighs herein. Work in progress — actively iterating on training methodology and content-fidelity evaluation.)*
 
 <img width="2752" height="1536" alt="NLA-Gemma-4-E2B release image" src="https://github.com/user-attachments/assets/7c2dbb86-03a2-4fb5-b234-b7645175825a" />
 
