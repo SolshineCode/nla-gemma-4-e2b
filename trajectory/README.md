@@ -20,6 +20,26 @@ pipeline_tag: text-generation
 
 # Gemma-4-E2B NLA AV (Actor) — v0.1.x cheap-path training trajectory
 
+## Updated framing (2026-05-17)
+
+Reviewing Anthropic's published NLAs on Neuronpedia confirmed that **"confabulated-but-thematically-correct"** outputs are the realistic NLA output class in 2026. Anthropic's Llama-3.3-70B-L53 and Gemma-3-27B-L41 NLAs ship with the disclaimer "NLAs can produce unexpected or incorrect explanations. See limitations." Their NLAs on a deception/team-affiliation roleplay correctly identify the theme but invent specifics (character names, alternate phrasings) not present in the source. Their Gemma-27B NLA on an anagram-of-animal-sounds prompt correctly produces "duck" and "animal sound" along with confabulated "c-dog", "lion roar", "don."
+
+Our v0.1.cc AV outputs ("list of country-specific statistics", "non-binary categories", "1947 partition", "concessive structure", "specific physical properties") are in the **same output class** as Anthropic's flagship NLAs, just produced by a model 13× smaller in parameters. The earlier "negative-result trajectory" framing missed this calibration: the 4 valid in-distribution checkpoints in this release (`step_000050`–`step_000200` cheap-path + `r80_step_*`) plus the post-§F72-correction checkpoints (`av_v0_1_bb`, `av_v0_1_cc` step_50/150/250 — separate HF repos) produce explanations that are realistic NLA outputs at small scale.
+
+The retraction block below stays as history (4 of 8 trajectory checkpoints were trained at out-of-distribution `injection_scale=20000` — that bug is real and documented). What changes is the interpretation of "what valid NLA output looks like at this scale." The answer: same shape as Anthropic's, with more detail-level confabulation due to smaller model capacity.
+
+---
+
+> ## ⚠ CORRECTED 2026-05-16 — partial retraction
+>
+> 4 of the 8 checkpoints in this trajectory release (the `inj20k_*`, `norms_inj20k_*`, `norms_inj20k_cumstep_*`, and `short_hybrid_*` subdirectories) were trained at `injection_scale = 20000` — 510× the Gemma-4-E2B token-embedding norm (measured 39.25). At those scales the injected activation vector is out-of-distribution to the transformer, the AV learns to ignore the injection slot, and template collapse appears within ~10 training steps regardless of any other lever.
+>
+> The "5 levers refuted, content-blindness ceiling reached" framing on the parent repo README was therefore inferred from 4 broken runs (out of 8). The unaffected `step_000050`–`step_000200` cheap-path checkpoints and the `r80_step_*` checkpoints were trained at the in-distribution default `injection_scale = sqrt(d_model) = 39.2` and remain scientifically valid — their +0.020 H15 content-match delta is the highest *valid* v0.1.x signal in this release.
+>
+> Bug origin (an unsourced argparse-help claim that "Anthropic uses 80000 for Gemma-3-12B") and the full retraction: see the parent repo `README.md` "CORRECTED 2026-05-16" block, plus `FINDINGS.md §F72` and `notes/AI_RESEARCHER_LESSON_2026-05-16_injection_scale_hallucination.md` in the source research repo.
+>
+> No checkpoints are being taken down. They remain published as scientifically-valid artifacts of an out-of-distribution-injection failure mode.
+
 > Open research-data release: every 50-step checkpoint from a 500-step SFT run on a 4 GB GTX 1650 Ti Max-Q. Includes the full training trajectory, NOT just the final adapter, so researchers can study how the model learned (or did not learn) across the regime.
 
 This is a **trajectory release** — a set of intermediate AV (Actor) LoRA adapters at every 50 steps of training. Each checkpoint lives in its own subdirectory.
