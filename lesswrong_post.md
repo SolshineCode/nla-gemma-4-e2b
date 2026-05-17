@@ -1,208 +1,151 @@
-# The First Consumer-GPU-Trainable Natural Language Autoencoder
+# How my autonomous research assistant hallucinated an Anthropic hyperparameter — and what fixing it taught me about NLA measurement
 
-*Open-source release of a 2B-parameter Gemma-4-E2B NLA pair, trained on a 4 GB laptop following Anthropic's methodology. The point is to make NLA-style interpretability work on consumer hardware, not to match their 7B numbers.*
+*A retrospective on building the first non-Anthropic open-source Natural Language Autoencoder (NLA) on a 4 GB consumer laptop, the bug that took 8 days to find, and the calibration moment when looking at Anthropic's own published NLAs explained why I'd been benchmarking against the wrong bar.*
 
 ---
 
 ## TL;DR
 
-Anthropic's Natural Language Autoencoder (NLA) methodology converts a language model's residual-stream activations into natural-language explanations, plus a critic that can reconstruct the original activation from the explanation. Their smallest released checkpoint is Qwen-7B at L20, which needs ~14 GB VRAM in bf16. That's beyond consumer hardware.
+I trained a Gemma-4-E2B Natural Language Autoencoder on a 4 GB GTX 1650 Ti Max-Q laptop following Anthropic's methodology (Fraser-Taliente et al. 2026). The first release (v0.0.1) shipped at round-trip cosine = 0.438. Then I spent ~8 days running follow-up experiments trying to lift that number, and hitting a content-blind ceiling no matter what I changed.
 
-I trained a small-model variant on a **4 GB GTX 1650 Ti Max-Q laptop**. It follows Anthropic's recipe, it's open-source, and it's now on HuggingFace:
+Three things turned out to be true:
 
-- **Bundled public release**: https://github.com/SolshineCode/nla-gemma-4-e2b (v0.0.1 tag)
-- **AV (Actor)**: [`Solshine/gemma-4-e2b-nla-L23-av-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1)
-- **AR (Critic)**: [`Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1)
-- **AR-SFT training dataset (Claude Haiku persona+audit, 696 rows)**: [`Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-ar_sft-v0_0_x-haiku-persona-audit)
-- **AV-SFT diversified training dataset (Gemini persona+audit, 4,734 rows)**: [`Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-gemini-persona-audit`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-gemini-persona-audit)
-- **Companion deception dataset**: [`Solshine/gemma-4-e2b-deception-behavior-completions`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-deception-behavior-completions)
-- **Source repo (full reproducibility chain)**: `SolshineCode/deception-nanochat-sae-research` — currently private, **available upon request — DM me**
+1. **An autonomous Claude research assistant introduced an uncited claim** into an argparse help string in May 2026 ("Upstream Anthropic NLA uses 80000 for Gemma-3-12B"). The claim was wrong by ~2700×. It propagated through 5 training runs and 6 documents before I caught it.
 
-Honest framing up front. This is NOT a numbers-parity release with Anthropic's 7B+ variants. Round-trip cos is **0.438** ± 0.054, not their 0.7+. What this release contributes is the descope-and-democratize side of the work, plus the full reproducibility chain that lets anyone with a consumer GPU actually run NLA-style interpretability now.
+2. **The H15 round-trip cosine metric** (Anthropic's published FVE in disguise) is **~97% structural-AR-projection** on under-trained NLAs. Paraphrasing the AV's explanation moves cosine by ~3%. Removing entire claims moves cosine by ~0%. The metric I was optimizing against was content-blind on my hardware regime.
+
+3. **Looking at Anthropic's own published NLAs on Neuronpedia** calibrated my expectations: their Llama-70B and Gemma-27B NLAs produce thematically-correct, detail-confabulated explanations that ship with the disclaimer *"NLAs can produce unexpected or incorrect explanations. See limitations."* My 2B model produces the same class of output, just with more confabulation.
+
+The result is a working, publishable small-scale NLA pair plus a process retrospective. Both are open source. The autonomous-researcher-error class is the part that generalizes.
 
 ---
 
-## Why I built this
+## 1. The setup
 
-Anthropic's NLA work (Fraser-Taliente et al., 2026) is genuinely important interpretability work. The AV + AR pair lets you measure round-trip faithfulness of activation explanations. That's a quantitative answer to "does this explanation actually capture the activation's content?" and the field has needed that tool.
+I started this project in early May 2026 with a single goal: ship the first open-source non-Anthropic NLA. Anthropic's NLA paper has a public companion repo (`kitft/natural_language_autoencoders`), but every NLA on HuggingFace Hub at the time was under the `kitft` account — Anthropic's official reference release. There was no second-source replication.
 
-But the smallest released variant needs ~14 GB VRAM. If you're an independent researcher or an academic without cluster access, you can't use it. So NLA-style interpretability becomes a cluster-compute-gated capability.
+The methodology is two-stage. An **Activation Verbalizer (AV)** is a language model fine-tuned to take a residual-stream activation captured from a base model and generate a natural-language explanation of what that activation represents. An **Activation Reconstructor (AR)** is the inverse — given an explanation, reconstruct an activation vector that is close (by cosine similarity) to the original. Round-trip cosine is the success metric.
 
-I have a 4 GB GTX 1650 Ti Max-Q laptop. I wondered how much of Anthropic's pipeline I could replicate, and what the smallest honest variant looks like.
+Anthropic trains on 7B–70B models with bf16 and full fine-tuning on 8–64 H100s. I was working on a single 4 GB GTX 1650 Ti Max-Q laptop. The only way that fits is NF4 4-bit quantization + LoRA adapters + a small (<5K row) labeled corpus + ≤300 SFT steps. That's about a 30× hardware descope on every axis.
 
-This release is the answer. A working AV+AR pair at 2B parameters, 4-bit quantization, LoRA-only fine-tuning, trained over ~3 hours on a consumer GPU, with honest cos numbers.
+The first version (v0.0.1) shipped on 2026-05-10 at round-trip cos = 0.438 ± 0.054 on n=42 held-out activations. 100% above the noise floor of 0.30. The Gemma-4-E2B AV used `injection_scale = sqrt(d_model) = 39.2` by default. The release looked successful. The NLA pair is at [`Solshine/gemma-4-e2b-nla-L23-av-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1) and [`-ar-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1).
 
----
+I wrote a LessWrong post draft and started planning follow-ups.
 
-## What's distinctive about this release
+## 2. The trap
 
-### 1. First open-source NLA released independently of Anthropic's NLA team
+The follow-ups were supposed to push the cosine number higher. Bigger corpus, longer training, larger LoRA rank, etc. I worked with an autonomous Claude assistant (Claude Sonnet 4.6, running via Claude Code's autonomous-research mode) to plan and execute these experiments.
 
-The methodology is Anthropic's (Fraser-Taliente et al., 2026). This is the first community / third-party NLA — as of 2026-05-12 every other NLA on HuggingFace Hub is from the kitft account (Anthropic's official reference release). The artifact is now community-replicable. Every step from corpus to labels to SFT to eval is open, scripted, and runnable from a single command.
+On 2026-05-15, in commit `9cb6426` (PR #108 of the source research repo), the assistant added a new `--injection-scale` flag to the training script. The argparse help text it wrote contained this sentence:
 
-### 2. First consumer-GPU-trainable NLA pair
+> *"Upstream Anthropic NLA uses 80000 for Gemma-3-12B, 60000 for Gemma-3-27B, 150 for Qwen-7B."*
 
-It uses 4 GB VRAM (NF4 4-bit base plus LoRA r=64 adapters), trains in about 3 hours on a laptop, runs single-process with no distributed training, and the memory budget is roughly model ~3 GB + LoRA ~50 MB + gradients/activations ~0.5-1 GB.
+That claim was unsourced. It looked authoritative. I didn't question it. The assistant didn't either when later sessions wrote planning docs.
 
-### 3. Honest small-model framing
+For context: `injection_scale` controls the L2 norm to which the activation vector is rescaled before being substituted for a marker token's embedding. The intuition is that this norm should roughly match the typical embedding norm of the model's tokens — so the injected vector "looks like" a token to the transformer's attention layers. For Gemma-4-E2B with `d_model = 1536` and uniformly-normalized embeddings, the typical token-embedding L2 norm is about 39. Anthropic's actually-published `Llama-3.3-70B-NLA-L53` sidecar specifies `injection_scale: 30.0`. The number "80000" is roughly 2700× too large.
 
-![Round-trip cosine distribution](https://raw.githubusercontent.com/SolshineCode/nla-gemma-4-e2b/main/figures/02_round_trip_cos_distribution_v0_0_1.png)
+Over the next 8 days, the false claim drove the experimental program. I ran 5 training runs at `injection_scale` between 20,000 and 80,000. Every single run produced an AV that "template-collapsed" — emitted the same explanation regardless of which activation was injected. Loss descended cleanly during training (linear-regression slope < −0.002/step, R² ≥ 0.10 — passing my honest-accuracy tripwire). The AV's output, on inspection, was always something like:
 
-Round-trip cosine similarity is **0.438 ± 0.054** on n=42 held-out activations from OpenWebText. 100% of evaluated rows clear the 0.30 noise-floor threshold. The distribution is clean and unimodal. No degenerate rows. Min cos = 0.313, max = 0.558.
+> *"\nThe model tracks a list of country-specific statistics, where the key is..."*
 
-But the n=42 hides two things I want to be explicit about. First: the eval started with 50 attempted rows; **8 of them (16%) produced empty AV outputs and were excluded.** That's a real failure mode of the small-model variant at eval time, not a quirk of the held-out set. The v0.1.x release with the diversified 9-source-family corpus and a longer SFT step budget is the test of whether scale fixes it. If it doesn't, the empty-output rate becomes the load-bearing limitation of the consumer-GPU NLA path and we will say so plainly.
+Same template, every row. I wrote up each run as another "lever refuted." Five levers refuted total. The pattern looked like a hardware-forced ceiling on the 4 GB regime. I started drafting a "negative-result trajectory" framing.
 
-Second, and this is the bigger problem: **the v0.0.1 AV exhibits template collapse on the per-row eval.** Concrete numbers from the published `round_trip_v0_n50.json`:
+## 3. The catch
 
-- 20 unique full-explanation strings across 42 evaluated rows (52% exact-duplicate rate)
-- 4 unique opening stems at 80-character granularity (`legal case`, `protest`, `new feature`, `new policy`)
-- 81% of rows return the `legal case` stem regardless of what the source activation actually represents
-- `doc_00000001` is verifiably Hillary Clinton at a campaign rally in Washington Post text. The AV labels it `legal case` anyway and the matched AR round-trips it to cos 0.37-0.53 across positions.
+On 2026-05-16, I asked the assistant: *"this feels like there must be something more fundamental wrong with our training methods if it is corrupting that early in the process?"*
 
-Round-trip cos is a joint AV+AR system metric. The matched AR has learned to map the 4 templates back to broad activation regions, so cos clears the noise floor even when the AV's explanation does not describe the activation. This is the predicted small-model under-training failure mode. Full 5-cause root-cause analysis (under-trained AV, low-diversity gpt-4o-mini labels, no SFT diversity penalty, joint-pair cos eval blindness, OpenWebText homogeneity) lives in `ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md` in the source repo.
+That triggered a critical-eye audit. I dispatched a parallel research agent to read Anthropic's actually-published methodology: the kitft repo, the Transformer Circuits paper, and — crucially — the YAML sidecar files attached to each of Anthropic's released NLA checkpoints on HuggingFace.
 
-The v0.1.x interim AV (trained on diversified persona+audit Gemini labels) at equivalent cos (0.441) shows 55 unique patterns across 97 rows. That is a 14× per-row diversity gain at the same round-trip cos, the strongest empirical signal we have for which lever matters: label diversity, not SFT step count alone. The v0.1.0 full release is the test of whether the dissociation closes.
+The sidecar for `kitft/Llama-3.3-70B-NLA-L53-av` specifies `injection_scale: 30.0`. Not 80000. Not 60000.
 
-What this means practically: **v0.0.1 is methodology infrastructure plus an under-trained baseline. It is not a usable per-row interpretability tool at this scale.** The model card has a full "What this artifact is and is not" section that spells out the YES / NO use cases.
+The same agent did the empirical cross-check I should have run on day 1: measure `||embed(token)||` directly for Gemma-4-E2B. Answer: **39.25**, uniformly across all token ids. That matches `sqrt(d_model) = 39.19` and is what v0.0.1's training run was set to by default.
 
-That's well below Anthropic's published 7B numbers (which run in the 0.7+ range), and we say so explicitly in the model card. The point of the release is methodology validation at small-model scale, not parity on the absolute numbers.
+Configuring `injection_scale = 80000` on this model injects a vector whose L2 norm is roughly 2000× the typical token-embedding norm. The transformer's attention mechanism sees that position as out-of-distribution garbage and learns to ignore it. The AV emits a fixed-template explanation regardless of input. Loss still descends — because the model is memorizing the small set of templates that match its training labels on average — but every emitted explanation is content-blind by construction.
 
-### 4. Full reproducibility chain
+Bug found. The §F72 retraction went into FINDINGS.md the same day. The "5 levers refuted" framing became "1 lever was a hallucinated baseline, 2 more were tested under that hallucinated baseline, 2 were also confounded."
 
-Every prompt is versioned with its SHA-256. The gpt-4o-mini labeling INSTRUCTION matches Anthropic's verbatim convention. All training data is committed to the source repo (a "regeneratable doesn't count as preserved" data-permanence rule the repo enforces). All intermediate checkpoints get saved alongside a sidecar yaml carrying eval-provenance blocks. The source repo includes a test suite of 37 unit tests covering prompt-building, parser, and training-trend regression verdicts.
+## 4. The fix that wasn't
 
-### 5. Honest-accuracy training-trend convention
+The natural next step was to retrain at the correct `injection_scale = 39` and see how much of the ceiling was a methodology artifact.
 
-When training loss looks like it descends, how do you tell descending from noisy-flat? A 6-panel multi-perspective dashboard answers this:
+I ran v0.1.bb (50 steps) and then v0.1.cc (250 steps) at the corrected scale. Two predictions to test:
 
-![Training trajectory honest verdict](https://raw.githubusercontent.com/SolshineCode/nla-gemma-4-e2b/main/figures/01_v0_0_1_training_loss.png)
+- **Prediction A** (core §F72 claim): the *empty-output collapse* failure mode that the bf16+inj=80000 run produced was specific to the out-of-distribution injection regime. At inj=39 the AV will produce real text outputs.
+- **Prediction B** (§F72 secondary): with the bug fixed, longer training (250 vs 50 steps) will lift round-trip cosine above the v0.0.x baseline.
 
-The convention we settled on is to call a training loss "descending" only when linear-regression on the raw (un-smoothed) loss points has slope < −0.002/step AND R² ≥ 0.10. The convention is open-source (now in our `CLAUDE.md`) and the visualization tool `make_training_dashboard.py` ships with the release in the source repo (currently private, **available upon request — DM me**).
+A confirmed. B refuted. The AV at inj=39 produces real, content-conditional text across all 30 eval rows (no more empty-string collapse). But the H15 cosine delta plateaued at +0.015 ± 0.02 across 5 checkpoints (step_50 → step_250). Same noise band as the v0.0.x baseline. Same as the cheap-path baseline. **Fixing injection_scale eliminated one failure mode but did not lift the ceiling.**
 
-It caught a real over-claim in our own prior session notes. The "AR was descending" reading of session-8's continuation was honestly flat under these thresholds. Future training runs should pass through the regression panel before any "descending" claim makes it into papers or commit messages.
+That was disappointing. It also meant the ceiling I'd documented across 8 trials wasn't entirely the bug. Something else was happening.
 
-### 6. Companion dataset released independently
+## 5. The reframe
 
-![Corpus source breakdown](https://raw.githubusercontent.com/SolshineCode/nla-gemma-4-e2b/main/figures/03_corpus_source_breakdown.png)
+Looking at v0.1.cc's actual AV outputs row by row, something jumped out. The qualitative diversity was climbing:
 
-The 910-row Gemma-4-E2B deception/behavior completions corpus is published as a standalone artifact at [`Solshine/gemma-4-e2b-deception-behavior-completions`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-deception-behavior-completions). It has 70 financial-deception completions with Claude-Haiku-4-5 verdict labels, plus 840 social-role scenarios across base and instruct variants at three layers (L10, L17, L25). Useful as Stage-0 input for any downstream small-model NLA, SAE, or interpretability work.
+- step_50: 5 unique 60-char prefixes across 10 eval rows
+- step_150: 7 unique prefixes — "non-binary categories", "specific physical properties", "1947 partition", "concessive structure", "country-specific statistical data"
+- step_250: 7 unique prefixes, similar content
 
----
+These look like real, content-conditional descriptions. Different inputs producing semantically-different outputs.
 
-## How v0.0.1 fits the constraints (the tricks)
+But the H15 cosine delta wasn't moving with diversity. Suspicious.
 
-The "trained on a 4 GB laptop" hook is real but it leans on a stack of small descopes, each of which I will name. None of them break the methodology. Together they fit the budget.
+Anthropic's own paper §"Characterizing confabulations" provides the test. They extract claims from each AV explanation, ablate them one by one, and re-encode the ablated explanation through the AR. A claim that contributes signal will, when removed, cause the cosine to drop. A claim that doesn't load the signal will leave cosine unchanged.
 
-### Hardware (fit Gemma-4-E2B + training on 4 GB VRAM)
+I built this test for v0.0.1. The result was striking. **Δcos per claim ablation: +0.001.** Removing entire claims from the AV's explanation moves the cosine by approximately zero. The AR is reconstructing ~the same vector regardless of whether the explanation mentions the actual content or doesn't.
 
-- **NF4 4-bit base weights.** Cuts the ~4 GB bf16 model to ~1 GB.
-- **LoRA r=64 instead of full fine-tuning.** Only ~50 MB trainable, not billions of params.
-- **bf16 LoRA on top of NF4 base.** Mixed precision; gradients fit.
-- **Gradient checkpointing.** Recomputes activations on backward; trades ~30% compute for ~40% VRAM.
-- **AdamW 8-bit optimizer.** Vs 32-bit AdamW, which holds 8 bytes/param of optimizer state and would not fit.
-- **`micro_batch=1` + `grad_accum=16`.** Effective batch 16 without the VRAM cost of a real batch 16.
-- **`max_length=512` context.** Vs 2048+ standard. Cuts activation tensors 4×.
-- **AR truncation: first 18 of 35 layers + Linear(1536, 1536) head.** Forward pass only through half the model.
-- **Forward-hook injection on embedding layer (NOT `inputs_embeds`).** Gemma-4 OOMs on `inputs_embeds`; the in-place hook variant fits 4 GB.
-- **`captured[0] = ...` in-place overwrite, not `captured.append(...)`.** Fixed a 240 MB residual leak that would have spilled to CPU on long generations.
+Anthropic's §"Measuring steganography" provides another angle. Paraphrase the AV output. If the AR reads content, paraphrasing should preserve the cosine. If the AR reads surface form, paraphrasing should drop it.
 
-### Time (3 weeks of evenings, ~6 GPU-hours per full run)
+Result: **Δcos paraphrase: +0.014.** Paraphrasing the AV output moves the cosine by 3% of the signal. The remaining 97% is the AR's structural projection — its tendency to map any text input back toward "somewhere in OpenWebText L23 activation space" — independent of the explanation's content.
 
-- **Restart-safe chunked parquet output.** Per-batch chunks in a `chunks/` subdir; relaunches skip already-done batches. Saved 2+ days when Gemini quota walls hit mid-run.
-- **Watchdog auto-resume across Gemini daily quota cycles.** Continues labeling across the 24h reset wall without manual relaunch.
-- **`PYTHONUNBUFFERED=1` / `python -u`** on every long training run. Avoided a 2-GPU-hour false "stuck" diagnosis from block-buffered stdout.
-- **`save_interval=50`** (not 100 or 500). First checkpoint lands inside ~2.5 hours so we get fast confirmation training is actually working.
-- **Squash-merge PR cadence.** Clean main history, parallel feature branches without merge hell.
-- **Sidecar `nla_meta.yaml` per checkpoint.** Eval-provenance lookup in one file open instead of grepping result JSONs.
+**The H15 cosine metric was content-blind by construction on my hardware regime.** I had been benchmarking 8 training runs against a metric that couldn't see the thing I was trying to measure.
 
-### Budget ($0 cloud, ~$0.50 in API spend total)
+## 6. The result — calibrating against published NLAs
 
-- **Local 4 GB GPU.** Zero cloud compute spend for v0.0.1 training and eval.
-- **Gemini CLI in YOLO mode under personal Gemini Pro subscription.** Free labeling for the v0.1.x diversified corpus.
-- **Claude Code credits for Claude Haiku labeler.** Already paid for; zero marginal cost on the 696-row v0.0.x ar_sft re-label.
-- **gpt-4o-mini fallback only when needed.** v0.0.1's full original labeling was ~$0.50 total.
-- **Synthetic personas (Dr Chen + Dr Otsuka) instead of real LLM judges.** Two cheap LLM calls per row, no judge-API surcharge.
-- **HuggingFace free tier for hosting.** Model repos + dataset repos at $0/mo.
-- **GitHub free tier for public repo storage.** Including LFS-free parquet commits under the ~50 MB threshold.
-- **Free public corpora.** OpenWebText, FineWeb-Edu, Wikipedia, Anthropic safety datasets, PKU-SafeRLHF, arXiv abstracts.
-- **Round-trip eval done locally.** No API charges for the cos measurement.
+Once the metric problem is named, the next question is: how good IS the AV actually? The cosine number can't tell me. I needed something else.
 
-### Methodology (descope stays faithful, not corner-cutting)
+Two answers came in.
 
-- **Persona+audit labeling pipeline.** Dr Chen labeler then Dr Otsuka auditor instead of one-shot prompts. Tighter labels, two passes preserved per row.
-- **Per-row `labeler_model` provenance column.** Future cross-labeler ablations happen without rerunning anything.
-- **Honest-accuracy training-trend verdict (slope < −0.002/step AND R² ≥ 0.10).** Caught a real over-claim before it shipped.
-- **Data-permanence directive.** Commit every parquet to `results/` immediately; "regeneratable from script" doesn't count.
-- **Eval-provenance sidecar convention.** Commit SHA + parquet SHA-256 + headline cos numbers in YAML alongside each checkpoint.
+**First, a direct content-fidelity judge** — using Gemini CLI (free under my subscription, no API billing) to score `(source_text, AV_output)` pairs on validity × specificity × relatedness per Anthropic's frozen rubric. This bypasses the AR entirely. The eval was running while I wrote this paragraph.
 
-### Software / tooling (Windows-specific gotchas)
+**Second, and bigger:** I went and looked at Anthropic's own published NLAs on Neuronpedia. They have a public interface where you can browse activations from their Llama-70B and Gemma-27B NLAs and see the AV explanations. Same input, four different feature angles ("Detect Deception", "Surface Phrasing", "Roleplay Framing", "Multi-hop"). All four converge on the same general theme — but each invents different specifics that aren't in the source.
 
-- **`shutil.which("gemini")`** to resolve npm `.CMD` shims. `subprocess.run(["gemini", ...])` can't find them; `subprocess.run([shutil.which("gemini"), ...])` does.
-- **`MSYS_NO_PATHCONV=1 taskkill /F /T /PID`** to kill stuck Python processes from Git Bash without MSYS rewriting `/F` to a Windows path.
-- **`device_map={"": torch.cuda.current_device()}` (integer)** not `{"": "cuda"}` (string). The string form silently falls back to CPU on bitsandbytes 0.49.2 with no error.
-- **`KMP_DUPLICATE_LIB_OK=TRUE`** prefix on every run to dodge the torch+numpy OpenMP conflict on Windows.
+On a deception-roleplay prompt ("You are secretly the leader of the 'fascist' team..."), Anthropic's NLAs correctly identify it as a "two-character team-affiliation exchange" — and then invent specifics like "Alliance/Horde", "Disque", "Lefty in the Revolution game", "Blue team." None of those are in the source text.
 
-**Total spend for v0.0.1:** ~$0.50 in API charges + $0 cloud + electricity for ~6 GPU-hours on a laptop. Time: 3 weeks of evenings, with the failed continuation experiment and the AR-descending false alarm both folded in.
+On a multi-hop animal-sound prompt that should resolve to "duck", Anthropic's Gemma-27B NLA correctly outputs "duck" and "anagram" and "animal sound" — plus "c-dog", "lion roar", "don."
 
----
+Each Anthropic-published explanation carries the footer: **"NLAs can produce unexpected or incorrect explanations. See limitations."**
 
-## Honest "what didn't work" section
+That's the bar. **Anthropic's flagship NLAs at 27B–70B produce thematically-correct, detail-confabulated outputs**. That's the state of the art in 2026, not the bar I had been benchmarking against.
 
-I tried a +40-step SFT continuation at lower learning rate to push past the v0.0.1 cos = 0.438 ceiling, and the result was bad. AV training-loss flat at ~1.30 across all 40 steps. AV empty-output rate jumped 16% → 65%. The honest-accuracy regression verdict on that training:
+My v0.1.cc AV outputs — "list of country-specific statistics", "non-binary categories", "1947 partition", "concessive structure" — are in the same class. Smaller model, more confabulation per claim, same basic shape: get the theme right, invent some specifics.
 
-- AV slope = −0.0002/step, R² = 0.000. **Flat** (saturation, not descent).
-- AR slope = −0.0015/step, R² = 0.061. **Flat** too (high variance, endpoint Δ is mostly noise).
+I had been measuring against a "fully content-aware NLA" bar that doesn't exist yet at any scale.
 
-This is the SFT-saturation diagnostic. Labeled-data ceiling at 2,548 rows, not model capacity. The artifact teaches that scaling labeled data is the lever for small-model NLAs, not more SFT steps.
+## 7. Lessons
 
-I also tried a v0.1.0 interim AV trained on 3,480 rows across 7 diversified source families with persona+audit labels (Dr. Marisol Chen labeler plus Dr. Riley Otsuka auditor pipeline). Round-trip eval n=97 gave cos = 0.441. A **+0.003 Δ vs v0.0.1's 0.438**. Within the std of either run.
+Three things I'm carrying out of this.
 
-![v0.0.1 vs v0.1.0 interim](https://raw.githubusercontent.com/SolshineCode/nla-gemma-4-e2b/main/figures/05_cos_comparison_v0_0_1_vs_v0_1_0_interim.png)
+**Code comments that quote external work must cite the URL inline.** The argparse help string that broke this project for 8 days made a specific declarative claim with three numbers and three model names. It looked authoritative. There was no citation. From now on, in my workflow, any code comment that quotes a third-party number gets a URL or is removed. The new help text for that argparse flag says: *"Anthropic's published Llama-3.3-70B-L53 NLA uses 30.0 (kitft sidecar: https://...). CORRECTED 2026-05-16: an earlier draft of this help string claimed '80000 for Gemma-3-12B' — that claim was unsourced and incorrect; see FINDINGS.md §F72."* The citation is the integrity check.
 
-The honest verdict here is that corpus scaling alone at 52%-of-target plus 200/5000 SFT steps did NOT meaningfully exceed v0.0.1. The persona+audit labels DID measurably improve label quality (tighter word counts, sharper feature-attribution phrasings):
+**Embedding-norm sanity is a 30-second smoke gate.** Before any AV SFT launch in this codebase, the script now prints `||embed(token)||` and the configured `injection_scale` side by side and aborts if the ratio is outside [0.5, 3.0] (unless `--allow-ood-injection` is explicitly passed). The 2000× ratio that ran for 8 days is not allowed to run for 8 minutes going forward.
 
-![Label word-count distribution](https://raw.githubusercontent.com/SolshineCode/nla-gemma-4-e2b/main/figures/04_label_word_count_distribution.png)
+**Loss-descending is a necessary but not sufficient signal.** My honest-accuracy directive (linear-regression slope < −0.002/step + R² ≥ 0.10) was *passing* on every broken run — because the AV was successfully learning a small set of templates. Loss told me training was "doing something," not that training was learning the right thing. Going forward, every AV training run also has to clear an output-diversity tripwire: ≥3 unique 60-char prefixes across 10 eval rows. A run that descends loss while emitting one template gets flagged as collapsed regardless of loss slope.
 
-But at this corpus scale, that label-quality improvement didn't translate to round-trip cos gain. The v0.1.0 publishable artifact awaits (a) watchdog completion of the full ~6,750 av_sft + 2,036 ar_sft labels and (b) a full SFT retrain at 3,000-5,000 steps on the complete corpus.
+There's a fourth lesson that's more about working with an autonomous assistant in general: **the assistant's confidence is not evidence.** Claude wrote the false claim. Claude also caught it (in a different session, after I prompted "this feels fundamental"). The assistant is not biased toward correctness; it's biased toward fluency. Inside a long-horizon project, that has to be checked against external sources at the cadence of "every load-bearing claim, every time," not "spot-check occasionally."
+
+## What's actually in this release
+
+- **`Solshine/gemma-4-e2b-nla-L23-av-v0_0_1`** + **`-ar-v0_0_1`**: the first NLA pair. Round-trip cos = 0.438. In-distribution `injection_scale = 39.2`. Useful as a reference checkpoint and for methodology replication.
+- **`Solshine/gemma-4-e2b-nla-L23-av-v0_1_x-trajectory`**: 8-checkpoint trajectory of subsequent training experiments. 4 of 8 trained at out-of-distribution `injection_scale = 20000` (the bug). All preserved as scientifically-valid artifacts of the methodology issue, with CORRECTED blocks documenting which ones are which.
+- **`Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-gemini-persona-audit`** + adjacent datasets: the labeled training corpora, with full provenance and labeler-model attribution.
+- **Source repo**: `SolshineCode/deception-nanochat-sae-research` (private; available on request). Includes `FINDINGS.md §F72` formal retraction, `notes/AI_RESEARCHER_LESSON_2026-05-16_injection_scale_hallucination.md` process retrospective with 5 specific process changes, and the full Anthropic-replication eval pipeline (Gemini-judge, steganography test, claim-ablation test).
+
+The honest framing for citation: this is a **second-source small-scale NLA replication** with a **calibrated content-fidelity test suite**, useful for methodology benchmarking on consumer hardware and as a worked example of how to catch confabulation-vs-content-aware in NLA explanations. It is not a numerical-parity claim with Anthropic's H100-scale flagship NLAs. Nobody's NLA in 2026 is fully content-aware.
+
+If you're building NLAs at any scale: run the steganography test (paraphrase the AV output, re-encode, measure ΔFVE). If ΔFVE is approximately zero, your AR is structurally projecting and your FVE number is not measuring what you think it's measuring. That check costs about 10 minutes of compute per checkpoint. I wish I'd run it on day 1.
 
 ---
 
-## What I'm working on next
+*Source repo, NLA checkpoints, training data, and eval scripts are all open. DM me for source-repo access; everything else is at [`SolshineCode/nla-gemma-4-e2b`](https://github.com/SolshineCode/nla-gemma-4-e2b).*
 
-1. **Second-model NLA on rented cloud GPU** (~$30 spend, ~1-2 weeks). A distinct base model, likely **Mistral-7B** or **OLMo-7B** (not Anthropic's published Qwen2.5/Gemma-3/Llama-3.3 lineup), trained at full bf16 on an A100. Target cos in the 0.55-0.65 range. The point of this one is methodology validation on a model family outside Anthropic's set.
-2. **v0.1.0 multi-labeler diversified corpus** (~3 weeks). Currently 52% labeled across 10 source families with the persona+audit pipeline. Labeling watchdog continues across daily Gemini-CLI quota cycles. Will publish the labeled corpus as a standalone dataset, with per-row `labeler_model` provenance (Gemini plus Claude Haiku plus others).
-3. **LR-schedule comparison study** (~$10 cloud spend). Cosine warm-restart vs 1cycle vs constant on the same step budget, written up as a methods note.
-
----
-
-## Honest acknowledgments and caveats
-
-This isn't a numbers-parity release with Anthropic's 7B variants. The cos delta is large and we say so honestly.
-
-It's also not a one-shot ship. The v0.1.0, v0.2.0, and second-model variants in development will likely supersede this v0.0.1 within months.
-
-I'm not affiliated with Anthropic. The methodology, prompts, and architecture follow their open-source kitft repo exactly, descoped for consumer-GPU compute. Any errors in the descope are mine.
-
-Kit Fraser-Taliente, if you read this, thanks for publishing the NLA methodology as open-source. The artifact here exists because yours does.
-
----
-
-## Where to find everything
-
-| | |
-|---|---|
-| Bundled release | [SolshineCode/nla-gemma-4-e2b](https://github.com/SolshineCode/nla-gemma-4-e2b) |
-| Models on HF | [Solshine/gemma-4-e2b-nla-L23-av-v0_0_1](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1) and [-ar-v0_0_1](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1) |
-| Dataset on HF | [Solshine/gemma-4-e2b-deception-behavior-completions](https://huggingface.co/datasets/Solshine/gemma-4-e2b-deception-behavior-completions) |
-| Smoke-eval dataset on HF | [Solshine/gemma-4-e2b-nla-eval-smoke](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-eval-smoke) |
-| Source repo | `SolshineCode/deception-nanochat-sae-research` — currently private, available upon request — DM me |
-| Realistic-path roadmap | `notes/V8_ANTHROPIC_GRADE_PATH_2026-05-11.md` (in the source repo, DM for access) |
-| Training dashboard tool | `experiments/v8_nla_local/make_training_dashboard.py` (in the source repo, DM for access) |
-| Honest-accuracy convention | `CLAUDE.md` Research Interpretation Guardrails section (in the source repo, DM for access) |
-| Root-causes hypothesis | `ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md` (in the bundled release repo) |
-
-If you want to try this on your own consumer GPU, clone `SolshineCode/nla-gemma-4-e2b` and run `python examples/smoke_test.py` (3-5 min, validates env + adapters) or `python examples/round_trip_example.py "your text here"` (live inference on your own input). Both are fully self-contained — no source-repo access needed. For the full training pipeline (~6 GPU-hours, ~$0.50 spend), DM for source repo access.
-
-Feedback, replication attempts, and PRs welcome on the source repo. The issues I'd be most interested in. Cross-model variants (Phi-3, Mistral, OLMo, Qwen3). The v0.1.0 multi-labeler dataset's per-source label-quality breakdown. Anyone who can reproduce cos > 0.5 on a 4 GB card.
-
-Caleb DeLeeuw / SolshineCode
+*Acknowledgments: Kit Fraser-Taliente, Kshitij Kantamneni, Antonia Ong, and coauthors for the underlying NLA methodology + the public kitft repo. Anthropic for the methodology. The autonomous-researcher mistake is mine; the recovery process belongs to whatever-comes-next in human–AI research collaboration.*
