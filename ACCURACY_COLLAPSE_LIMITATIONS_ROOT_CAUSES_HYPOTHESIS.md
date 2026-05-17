@@ -6,6 +6,15 @@
 **Date:** 2026-05-12
 **Status:** Hypothesis, partially verified
 
+> ## ⚠ CORRECTED 2026-05-16 — significant retraction below this document's "H24 bf16+inj=80000" addendum (if present)
+>
+> Subsequent analysis identified that the `injection_scale` parameter used in v0.1.x trial runs after 2026-05-15 was set 510–2038× larger than the Gemma-4-E2B token-embedding norm (measured 39.25). The injected activation vector was out-of-distribution to the transformer, the AV learned to ignore the injection slot, and template collapse appeared from training step_10 regardless of any other lever.
+>
+> The phenomenon described in *this* document (v0.0.1's AV-side template collapse) is real and unchanged — v0.0.1 was trained at the in-distribution default `injection_scale = sqrt(d_model) = 39.2`, coincidentally matching the embed norm. The retraction applies to subsequent reasoning that "fixing this collapse requires hardware beyond 4 GB" — the v0.1.bb experiment at corrected `injection_scale=39` (2026-05-16) showed that the injection_scale bug caused a specific failure mode (empty-output collapse, v0.1.aa) but NOT the broader content-blindness phenomenon. The broader phenomenon is more likely a step-count + effective-batch-size ceiling than a hardware-impossibility.
+>
+> Full retraction with audit table and predictions/refutations: `FINDINGS.md §F72` in the source research repo (private; DM for access).
+> Process retrospective on how the AI-introduced bug propagated for 8 days: `notes/AI_RESEARCHER_LESSON_2026-05-16_injection_scale_hallucination.md` in the source research repo.
+
 ## What this document is
 
 The v0.0.1 NLA pair achieves round-trip cosine similarity of 0.438 ± 0.054 on n=42 held-out activations, with 100% of evaluated rows clearing the 0.30 noise floor. Those numbers are real. But qualitative inspection of the per-row eval outputs revealed a problem the cos metric does not surface: the AV (Actor) half of the pair produces a small, templated set of explanations rather than per-row faithful descriptions of the activations it receives.

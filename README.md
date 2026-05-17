@@ -2,7 +2,35 @@
 
 **First open-source Natural Language Autoencoder (NLA) released independently of Anthropic's NLA team.** Trained end-to-end on a 4 GB consumer GPU. The methodology contribution at small-model scale to democratize NLA research.
 
-> ## ⚠ Headline finding (2026-05-16, post-H23 update)
+> ## ⚠ CORRECTED 2026-05-16 (later that day) — methodology bug found, partial retraction
+>
+> The "5 levers refuted, content-blind ceiling reached" framing immediately below is **partially retracted**. A subsequent critical-eye audit (prompted by the question "what if something more fundamental is wrong with our training methods?") identified that 4 of the 8 v0.1.x trajectory checkpoints (`inj20k`, `norms_inj20k`, `norms_inj20k_cumstep`, `short_hybrid`) were trained with `injection_scale` set 510–2038× larger than the Gemma-4-E2B token-embedding norm (measured 39.25). The injected activation vector was out-of-distribution to the transformer; the AV learned to ignore the injection slot and emit fixed templates from step_10 of training. Loss-descending masked the bug because the AV memorized a small label vocabulary.
+>
+> **Bug origin:** an argparse help string contributed by an autonomous Claude research assistant on 2026-05-15 claimed "Upstream Anthropic NLA uses 80000 for Gemma-3-12B, 60000 for Gemma-3-27B, 150 for Qwen-7B." That claim was unsourced and incorrect. Anthropic's actually-published `injection_scale` for `Llama-3.3-70B-NLA-L53` is **30.0** (per the kitft model card: https://huggingface.co/kitft/Llama-3.3-70B-NLA-L53-av/raw/main/nla_meta.yaml). The hallucinated number propagated through 5 training runs and 6 documents over 8 days before being caught.
+>
+> **What this changes:**
+> - "H18 refuted (injection scale)": doubly-wrong. The H18 hypothesis itself was based on the hallucinated upstream value, and the "refutation" was tested at an out-of-distribution scale.
+> - "H22 best (norms+inj=20K)": undecidable — content-match result was measured on an OOD-injection model.
+> - "H23 refuted (label format)": doubly-wrong — ran at both OOD injection AND with short-tag labels that are themselves a methodology mismatch.
+> - "H19 hardware ceiling (fp16 NaN at inj=50K)": NaN was real, but the inj=50K target was a phantom.
+> - "H24 bf16+inj=80K": ran the bug at higher scale; loss descended cleanly but the AV produced empty outputs (decoded to "" because every generated token was a special token).
+>
+> **What survives:**
+> - The v0.0.1 NLA pair (`Solshine/gemma-4-e2b-nla-L23-av-v0_0_1`, `…-ar-v0_0_1`) was trained at `injection_scale = sqrt(d_model) = 39.2` — coincidentally matching the embed norm. Its round-trip cos = 0.438 (n=42) result is unchanged.
+> - The v0.1.x `cheap_path` and `r80_step` checkpoints (4 of 8 in this trajectory) were also at the default 39.2 — in-distribution. Their content-match deltas survive.
+> - The bug-recovery experiment (v0.1.bb, 50 steps at corrected `injection_scale = 39`) tested both predictions: **the empty-output collapse failure mode was indeed caused by OOD injection (confirmed)**, but **fixing injection_scale alone does NOT lift the content-blind ceiling (refuted)**. The remaining gap from upstream Anthropic-grade quality is the *other* parameter mismatches (effective batch 16 vs 256; 50 SFT steps vs ~1000; lr 1e-4 vs 2e-5; LoRA vs full-FT; corpus size).
+>
+> **What we are NOT doing:**
+> - Not taking down any checkpoints. v0.1.v / v0.1.w / v0.1.z / v0.1.aa weights remain published as scientifically-valid artifacts of the methodology bug. Future researchers reproducing the upstream methodology will want to see what OOD injection looks like in practice.
+> - Not rewriting git history. This block is appended; the original content below is preserved verbatim.
+>
+> **Refined diagnosis (replaces the "5 levers refuted, hardware ceiling reached" framing):** the v0.1.x trajectory hit TWO failure modes that were conflated. Failure mode A (empty-output collapse) was caused by OOD `injection_scale` and is fixable. Failure mode B (templated outputs, low row-to-row diversity) is the small-hardware under-training ceiling and is *not* fixable by changing injection_scale alone — it requires the other parameter alignments. Whether failure mode B is also fixable on 4 GB hardware is now an open question (the natural test is longer training at corrected injection_scale; in-progress as of 2026-05-16 evening).
+>
+> Process retrospective on how the bug entered + 5 specific process changes to prevent recurrence: `notes/AI_RESEARCHER_LESSON_2026-05-16_injection_scale_hallucination.md` in the source research repo.
+>
+> Full formal retraction with the per-checkpoint injection_scale audit table: `FINDINGS.md §F72` in the source research repo (private; available upon DM).
+
+> ## ⚠ Headline finding (2026-05-16, post-H23 update — superseded by the CORRECTED block above)
 >
 > **None of the AV checkpoints in this release produce activation-conditioned outputs in practice.** All checkpoints (v0.0.1, v0.0.2, and the 8-subfolder v0.1.x trajectory) converge to fixed-template outputs (paragraph form in v0.0.x/v0.1.x; short-tag form in v0.1.v) that are drawn from the training prior rather than from the injected activation vector. A Hillary Clinton rally activation produces the same AV output as a Casino Blackjack game activation.
 >
@@ -10,12 +38,12 @@
 > 1. **Corpus size** (4,734-row scale-up): H15 refuted
 > 2. **SFT step count** (50 → 250): H14 refuted; step_50 sweet spot, overfits past
 > 3. **LoRA rank within 4 GB** (r=64 → r=80; r=96+ OOMs): H17 refuted
-> 4. **Injection scale** (sqrt(d)→20000; 50K+ NaNs on fp16+NF4): H18/H19 refuted
-> 5. **Label format** (paragraph → ≤5-word short tags via Opus/Sonnet/Gemini/Deepseek hybrid corpus): H23 refuted
+> 4. **Injection scale** (sqrt(d)→20000; 50K+ NaNs on fp16+NF4): H18/H19 refuted *(see CORRECTED block above — this lever was tested at an OOD scale; the underlying refutation premise was wrong)*
+> 5. **Label format** (paragraph → ≤5-word short tags via Opus/Sonnet/Gemini/Deepseek hybrid corpus): H23 refuted *(see CORRECTED block above — tested with both OOD injection and a non-Anthropic-format corpus)*
 >
 > The full root-cause investigation (H1-H23 numbered findings, ~500 lines) is in [`ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md`](ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md). **Read it before using these models for any interpretability work.** The published checkpoints are useful for methodology replication, infrastructure benchmarking, and as a negative-result reference; they are NOT useful for actually interpreting Gemma-4-E2B activations.
 >
-> Path to a functional NLA at this methodology likely requires hardware beyond 4 GB: either bf16 + full fine-tune (no LoRA prior) + injection_scale=80000 (matching upstream Anthropic Gemma-3-12B), or a 4090 rental for 6-8 hours (~$30) to combine all four hardware-forced lever fixes at once.
+> Path to a functional NLA at this methodology likely requires hardware beyond 4 GB: either bf16 + full fine-tune (no LoRA prior) + injection_scale=80000 (matching upstream Anthropic Gemma-3-12B), or a 4090 rental for 6-8 hours (~$30) to combine all four hardware-forced lever fixes at once. *(NOTE: the "injection_scale=80000 matching upstream" goal in this sentence was based on the hallucinated claim retracted above. The actual upstream value is 30.0. Path-to-functional-NLA is still uncertain at 4 GB but the bottleneck is more likely SFT step count + effective batch size, not injection scale.)*
 
 <img width="2752" height="1536" alt="Gemini_Generated_Image_gqbm6agqbm6agqbm" src="https://github.com/user-attachments/assets/7c2dbb86-03a2-4fb5-b234-b7645175825a" />
 

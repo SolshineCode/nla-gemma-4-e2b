@@ -2,6 +2,14 @@
 
 Complete list of every dataset used at any stage of the v0.0.x and v0.1.x NLA training pipelines. Source corpora are public HF datasets; activation extractions and labeled corpora are published as Solshine HF datasets.
 
+> ## ⚠ CORRECTED 2026-05-16 — label format mismatch flagged on the short-label hybrid corpus
+>
+> The labeled corpus `Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-short-hybrid-labels` (used by v0.1.v, v0.1.w, v0.1.aa training runs) has median response length of **6 words** with ≤7-word "explanation" tags (e.g. `"<explanation>\nGalileo refuting Aristotle's gravity\n</explanation>"`). Anthropic's NLA methodology trains on multi-paragraph ~80–120-word explanations with bolded topic headings. This format mismatch is documented as the second of two methodology bugs identified on 2026-05-16 (the first being the `injection_scale` OOD issue; see parent README's CORRECTED block).
+>
+> The earlier conclusion "H23 label format lever refuted" (testing short tags vs paragraph labels) is itself partially undecidable because the test ran at out-of-distribution injection scale AND with a non-Anthropic-format label distribution. The short-label corpus stays published as a methodology-mismatch artifact and for reproducing H23's original (now retracted) test; we recommend the long-label corpora (`stage3_v0_1`, `stage3_v0_1_full`, `stage3_v0_0x_persona_audit`; median ~70-77 words) for any future training.
+>
+> Full retraction context: `FINDINGS.md §F72` in the source research repo (private; available upon DM).
+
 ## Source corpora (Stage 0 input — text → activations)
 
 These are the public text datasets from which we sampled documents, ran them through `google/gemma-4-E2B`, and captured layer-23 residual-stream activations.
