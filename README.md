@@ -1,6 +1,6 @@
 # NLA-Gemma-4-E2B
 
-**First open-source Natural Language Autoencoder (NLA) released independently of Anthropic's NLA team.** Trained end-to-end on a 4 GB consumer GPU. The methodology contribution at small-model scale to democratize NLA research.
+**First open-source Natural Language Autoencoder (NLA) released independently of Anthropic's NLA team.** Trained end-to-end on a 4 GB consumer GPU. The methodology contribution at small-model scale to democratize NLA research. WORK IN PROGRESS
 
 > ## ⚠ Headline finding (2026-05-16, post-H23 update)
 >
