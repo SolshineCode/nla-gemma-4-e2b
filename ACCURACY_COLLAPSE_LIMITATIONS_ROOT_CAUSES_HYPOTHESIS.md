@@ -785,3 +785,44 @@ Phase A's auxiliary loss uniformly lifted reconstruction quality across *every i
 **For source-repo references:** the calibrated AV-output-class framing is `FINDINGS.md §F72 Addendum 4` (v0.1.cc smoke confirms confabulation-with-specificity pattern matches published NLA reference). The v0.1.dd findings + AR-bottleneck restated + Phase A 3-piece-evidence are `§F72 Addendum 5`. Both addenda live in the source research repo (private; DM for access).
 
 **Status.** Final for the v0.1.dd / Phase A / 18h grant cycle (2026-05-17 / 2026-05-18). Three converging pieces of evidence for AR structural-projection diagnosis at higher confidence than the H23-era framing.
+
+## Addendum 4 — L1/L2 decomposition of structural projection + v0.2/v0.3 cross-row contrastive (2026-05-18 8.5h grant)
+
+A subsequent 8.5h grant tested two more AR-side attacks (v0.2 hinge-against-noise; v0.3 hinge-against-cross-row-AV-style) with a stronger probe (cross-row identity test). The investigation produced a cleaner scientific framing — **structural projection has two layers**, and these layers respond very differently to the lever space accessible at 4 GB.
+
+**L1 — AV-output style vs non-AV-output style.** Does the AR project content-bearing AV-style explanations higher than non-content noise (gibberish, empty, factual-but-unrelated English)? Tested by the held-out noise eval (training_pool + heldout_gibber + heldout_factual cosine deltas).
+
+**L2 — per-AV-output identity.** Does the AR project AV-output-for-row-i closer to gold-i than to gold-j (j≠i)? Tested by the cross-row identity test — a 10×10 cosine matrix `cos(AR(av_i), gold_j)` whose diagonal-vs-off-diagonal margin and argmax accuracy measure whether the AR identifies *which* activation the AV is describing.
+
+**Four hardware-feasible AR-side attacks at 4 GB, all evaluated against both L1 and L2:**
+
+| AR | Training objective | L1 (vs noise) | L2 (cross-row argmax) |
+|---|---|---|---|
+| v0.0.1 baseline | Standard SFT | weak (+0.02 on all pools) | **fails (1/10 chance)** |
+| v0.1 paraphrase-inv | MSE(orig)+λ·MSE(paraphrase) | (untested) | **fails (1/10 chance)** |
+| v0.2 noise-hinge | MSE(orig) + hinge vs GIBBER/EMPTY | **strong (+0.20 generalizing gap)** | **fails (1/10 chance)** |
+| v0.3 cross-row hinge | MSE(orig) + hinge vs other rows' prompts | medium (+0.06–0.08; factual > gibber) | **fails (1/10 chance)** |
+
+**L1 IS solvable at 4 GB**: v0.2 demonstrates a +0.20 generalizing gap on held-out gibberish + factual English (96% of training-pool gap on gibber; 52% on factual). This is real surface-form content discrimination that transfers to unseen noise.
+
+**L2 is NOT solvable at 4 GB with the lever space tested.** All four ARs have cross-row argmax accuracy at chance baseline (1/10). The "AR projects everything to gold-shaped subspace" pattern from the H23-block / Addendum 3 holds at the per-row identification level regardless of whether we pull, push-noise, or push-cross-row.
+
+**Why v0.3 still fails L2 despite a +0.083 training-time gap.** v0.3's training negatives came from the same 696-row paraphrase corpus as its positives. The discrimination signal trained for prompt-pair-specific differentiation within that corpus but did NOT transfer to the 10 held-out rl-parquet rows used in the cross-row identity test. The gap was real within training distribution; the *content reading* skill was not.
+
+**v0.2 vs v0.3 — opposite L1 patterns.** v0.2's noise-hinge produced a heavy surface-form classifier (+0.195 gap on gibber, +0.105 on factual). v0.3's cross-row hinge produced a more semantic discriminator (+0.060 on gibber, +0.082 on factual — the inversion). v0.3 distinguishes "real English describing a different topic" from gold more strongly than gibberish, the opposite of v0.2. Both useful but neither solves L2.
+
+**What L2 likely requires.** Untested, but the cumulative pattern points to one or more of:
+
+1. **Higher AR capacity** — LoRA r=64 on 18 transformer layers may be too constrained for per-row content reading. Cloud GPU + r=256 or full-FT.
+2. **Deeper AR** — K=24 or full 35-layer AR would expand the reading capacity.
+3. **Cross-attention between AV output and gold activation** — explicitly condition AR on the gold during training.
+4. **Larger training data + much longer SFT** — Anthropic uses 100k+ steps; we're at 50.
+5. **GRPO with content-aware reward** — Anthropic's recipe; not attempted here.
+
+(1) and (4) are cheapest to test on cloud GPU. (2) might fit at 4 GB with smaller AR rank. (3) and (5) are research-engineering projects.
+
+**Earlier retraction.** Mid-session in the 2026-05-18 grant, a brief "v0.2 is the first functional content-discriminating AR at 4 GB scale" claim was made based on the held-out noise eval alone. The cross-row identity test (added at user prompting about whether the evals were checking the right things) showed v0.2 argmax rate of 1/10 at chance baseline. The claim was retracted in source-repo Addendum 6 the same session. **v0.2 is a useful intermediate artifact for the L1 layer, but is NOT a functional NLA.**
+
+**Status.** Final for the 8.5h grant cycle 2026-05-18 (07:13 PDT - 15:41 PDT). The L1/L2 decomposition is the cleanest scientific frame produced for "what structural projection means" at this hardware scale. Cross-row identity should be the headline metric for any future AR retrain attempt.
+
+**For source-repo references:** the L1/L2 framing is `FINDINGS.md §F72 Addendum 6` (v0.2 + introduction of the cross-row test) + `§F72 Addendum 7` (v0.3 + 4-attempt cumulative summary). The v0.2 AR (Solshine/...-ar-v0_1-paraphrase-invariant on HF — note the name is from before the L1/L2 reframing) is shipped as an L1 demo. v0.3 is not yet on HF.
