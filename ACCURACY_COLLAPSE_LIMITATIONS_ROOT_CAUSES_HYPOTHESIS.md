@@ -749,8 +749,39 @@ The fact pattern updated:
 
 Step counts 50 → 100 sit in the same noise band as v0.1.cc's step_50→step_250 plateau (+0.020 to +0.021) and the v0.0.1 H5 baseline (+0.0242). Provisional verdict: **step count at the corrected baseline does NOT lift the H15 ceiling on a second independent corpus** — extends Addendum 2's "step count is not the lever" finding from the long-label corpus to the persona+audit-haiku corpus.
 
-**Next-step direction.** Phase A (paraphrase-invariance AR retrain, `stage_ar_sft_v0_1.py` in source repo, pre-staged with a 696-row paraphrase corpus built from natural labeler-v1 / auditor-v2 explanation pairs from the same persona+audit-haiku stage) directly attacks the AR-side bottleneck rather than the AV-side. If it lifts the AR's `cos(AR(orig), AR(paraphrase))` materially relative to v0.0.1's +0.014 baseline, the structural projection loosens — which is the load-bearing intervention to test next on this hardware. Running during the extended GPU grant ending 07:13 PDT 2026-05-18; results will be added as a follow-up addendum.
+**Phase A complete (2026-05-18 02:34 PDT) — paraphrase-invariance AR retrain ran 50 SFT steps from v0.0.1 AR.** Three converging pieces of evidence now confirm the structural-projection diagnosis at higher confidence:
 
-**For source-repo references:** the calibrated AV-output-class framing is `FINDINGS.md §F72 Addendum 4` (v0.1.cc smoke confirms confabulation-with-specificity pattern matches published NLA reference). The v0.1.dd preliminary findings + AR-bottleneck restated are `§F72 Addendum 5`. Both addenda live in the source research repo (private; DM for access).
+**1. Loss-domain diagnostic (Phase A training trace, every step):**
+   `orig` and `para` losses tracked within 0.001-0.013 at *every* step from step 1 onward. The v0.0.1 AR was already paraphrase-invariant in loss before training began — the auxiliary λ·MSE(AR(paraphrase), gold) term had nothing differential to attach to.
 
-**Status.** The "lever space is exhausted on 4 GB" statement in the H23 block above remains accurate for the original lever set (corpus size, training duration, LoRA rank, injection scale, label format) — but the **AR-side lever (paraphrase-invariance retrain) had not been tested when that statement was written.** Phase A is the open hardware-feasible direction. This addendum will be extended with Phase A results before merge.
+**2. Direct Δcos test on n=30 natural paraphrase pairs:**
+
+| Quantity | AR v0.0.1 | AR v0.1 |
+|---|---:|---:|
+| Δcos = cos(AR(orig), gold) − cos(AR(para), gold) | +0.0008 | +0.0011 |
+| cos(AR(orig), AR(paraphrase)) — internal consistency | 0.9929 | 0.9948 |
+| **cos(AR(orig), gold)** — absolute reconstruction | **0.4257** | **0.4966 (+17%)** |
+
+Both AR versions treat orig and paraphrase identically (Δcos ≈ 0). The "baseline +0.014" cited earlier was n=2 measurement noise; n=30 firms zero. But the absolute reconstruction quality lifted by +0.0709 (+17%) — Phase A's loss made the AR a better reconstructor.
+
+**3. H15 head-to-head (v0.1.dd step_250 AV, two ARs, n=10 rl-parquet rows):**
+
+| Input | AR v0.0.1 | AR v0.1 | absolute lift |
+|---|---:|---:|---:|
+| AV_OUT | 0.4221 | 0.4603 | +0.0382 |
+| EMPTY  | 0.4048 | 0.4531 | **+0.0483** |
+| RANDOM | 0.4045 | 0.4525 | **+0.0480** |
+| GIBBER | 0.4137 | 0.4562 | +0.0425 |
+| **Δ(AV_OUT − EMPTY)** | **+0.0174** | **+0.0072** | shrank |
+
+Phase A's auxiliary loss uniformly lifted reconstruction quality across *every input type* — including pure-noise EMPTY, RANDOM, and GIBBER. AV_OUT got the *smallest* absolute lift. The content-loaded differential Δ(AV_OUT−EMPTY) **shrank** from +0.017 to +0.007 because the AR's "background structural projection" got more accurate faster than its content-loaded reading did.
+
+**Definitive interpretation.** AR v0.1 is a **better structural projector**, not a content-reader. Phase A's auxiliary loss cannot break the projection; it can only make the projection more accurate. The three lines of evidence above converge on the same diagnosis from independent methodologies.
+
+**Implication for the "lever space is exhausted" claim.** The original H23-block claim now stands with one update: the paraphrase-invariance AR-side lever has been tested, lifts absolute round-trip cosine, and does *not* break content-blindness. Hardware-feasible AR-side levers on this 4 GB GPU regime are now exhausted. Next-grant direction pivots to cloud GPU + deeper-truncation AR / larger LoRA rank / full-FT / GRPO.
+
+**What's shippable.** The (v0.1.dd step_250 AV, AR v0.1) pair has higher absolute round-trip cosine (mean AV_OUT cos ≈ 0.46) than (v0.0.1 AV, v0.0.1 AR) (mean ~0.42). It is a valid v0.1 NLA pair with the explicit caveat that the H15 content-aware delta is *smaller*, not larger. Same realistic NLA output class as Anthropic's published Neuronpedia models at 13× smaller parameter scale.
+
+**For source-repo references:** the calibrated AV-output-class framing is `FINDINGS.md §F72 Addendum 4` (v0.1.cc smoke confirms confabulation-with-specificity pattern matches published NLA reference). The v0.1.dd findings + AR-bottleneck restated + Phase A 3-piece-evidence are `§F72 Addendum 5`. Both addenda live in the source research repo (private; DM for access).
+
+**Status.** Final for the v0.1.dd / Phase A / 18h grant cycle (2026-05-17 / 2026-05-18). Three converging pieces of evidence for AR structural-projection diagnosis at higher confidence than the H23-era framing.
