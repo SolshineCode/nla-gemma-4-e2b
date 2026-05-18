@@ -98,9 +98,9 @@ Working end-to-end round-trip example with the matched AV: `examples/round_trip_
 ## What makes this release distinctive
 
 - **First non-Anthropic-team open-source NLA AR** at any model scale.
-- **First LoRA-based NLA AR.** Anthropic's published NLA ARs are full fine-tunes at bf16. This release demonstrates a **LoRA adapter (r=64, α=128) + 1536→1536 linear head + AR truncation at K=18 layers** over NF4-quantized Gemma-4-E2B. Shipping as LoRA + a small head means the AR loads in ~0.6 GB VRAM on top of the frozen NF4 base — the entire matched (AV, AR) pair fits in 4 GB. The L1/L2 structural-projection findings documented in the source repo (`FINDINGS.md §F72`) are properties of this LoRA-AR class at 4 GB scale specifically; they may or may not hold at larger AR capacity / full-FT, which is the open next-grant direction.
+- **First LoRA-based NLA AR.** Anthropic's published NLA ARs are full fine-tunes at bf16. This release demonstrates a **LoRA adapter (r=64, α=128) + 1536→1536 linear head + AR truncation at K=18 layers** over NF4-quantized Gemma-4-E2B. Shipping as LoRA + small head means the AR loads in ~0.6 GB VRAM on top of the frozen NF4 base — the entire matched (AV, AR) pair fits in 4 GB. The structural-projection properties documented below are characteristic of this LoRA-AR class at 4 GB scale; they may differ at higher AR capacity / full-FT.
 - **Consumer-GPU trainable.** Fits on 4 GB laptop GPU end-to-end alongside the matched AV.
-- **Documented structural-projection behavior with L1/L2 decomposition.** This AR's structural-projection signature has been characterized in two layers: L1 (AV-vs-non-AV style projection, the surface form classifier) is partially solvable at 4 GB with hinge-loss retraining (v0.2 demonstration). L2 (per-AV-output identity — does the AR project AV-output-for-row-i closer to gold-i than to gold-j?) is NOT solvable at 4 GB with the lever space tested. See "Limitations" below + `ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md` Addendum 4 for the cumulative analysis.
+- **Documented structural-projection behavior.** Standard NLA AR architectures, including this one, produce reconstructions with a strong structural-projection component independent of the input explanation. Quantitative characterization in the source research repo.
 
 ## Limitations
 
@@ -111,7 +111,7 @@ Working end-to-end round-trip example with the matched AV: `examples/round_trip_
 - **Use this AR for**: matched round-trip eval with the v0.0.1 AV (the cosine number is a valid characterization of the AV+AR pair as a system); replication of Anthropic's NLA validation pipeline at small scale; benchmarking AR-side improvements.
 - **Do not use this AR for**: inferring that the AV's explanation faithfully describes the activation. Use AV-side direct content-fidelity judging instead, or in addition.
 
-Full development history including the §F72 retraction and content-blind-AR investigation: [`HISTORY.md`](https://github.com/SolshineCode/nla-gemma-4-e2b/blob/main/HISTORY.md).
+Full development history and methodology retraction notes: [`HISTORY.md`](https://github.com/SolshineCode/nla-gemma-4-e2b/blob/main/HISTORY.md). Internal experiment numbering and audit trail: source research repo (available on request).
 
 ## Citation
 

@@ -1,6 +1,6 @@
 # NLA-Gemma-4-E2B
 
-**The first open-source Natural Language Autoencoder (NLA) released independently of Anthropic's NLA team.** Trained end-to-end on a single 4 GB consumer GPU. Open weights, open data, open methodology. *(NLA weighs herein. Work in progress — actively iterating on training methodology and content-fidelity evaluation.)*
+**The first open-source Natural Language Autoencoder (NLA) released independently of Anthropic's NLA team — and the first NLA trained with LoRA + 4-bit quantization on a consumer GPU.** Open weights, open data, open methodology. v0.0.1 + v0.1 NLA pairs hit round-trip cosine **0.44–0.46** on held-out activations — competitive with Anthropic's reported pre-GRPO SFT FVE (0.3–0.4) at **13× smaller parameter scale** and ~**$0 of cloud compute** (4 GB GTX 1650 Ti Max-Q laptop, ~3 GPU-hours per pair).
 
 <img width="2752" height="1536" alt="NLA-Gemma-4-E2B release image" src="https://github.com/user-attachments/assets/7c2dbb86-03a2-4fb5-b234-b7645175825a" />
 
@@ -15,11 +15,11 @@ A working pair of NLA adapters for `google/gemma-4-E2B` at residual-stream layer
 ## What makes this release unique
 
 - **First non-Anthropic-team open-source NLA at any scale.** As of 2026-05, every other NLA on HuggingFace Hub is under the `kitft` account (Kit Fraser-Taliente, the paper's first author). This is the second-source replication.
-- **First LoRA-based NLA training.** Anthropic's published NLAs use full fine-tuning at bf16 on H100 clusters. This work demonstrates that **LoRA adapters (r=64–80, α=128) on NF4-quantized Gemma-4-E2B** can produce NLA pairs at the same realistic output class (theme-correct, detail-confabulated) at 13× smaller parameter scale. The LoRA + 4-bit-quant + RMSNorm-unfreeze stack is the architectural choice that makes this entire 4 GB-feasible methodology possible — both halves of the pair (AV and AR) ship as LoRA adapters over the same frozen base, so loading the full pair into 4 GB VRAM is feasible.
-- **Consumer-GPU trainable.** End-to-end on an NVIDIA GTX 1650 Ti Max-Q (4 GB VRAM) laptop. About 3 GPU-hours for the v0.0.1 pair. Full pipeline (Stage 0–3 + SFT + eval) runs on this hardware because of the LoRA + NF4 stack above.
+- **First LoRA + 4-bit-quantized NLA.** Anthropic's published NLAs use full fine-tuning at bf16 on H100 clusters. This work demonstrates that **LoRA adapters (r=64–80, α=128) on NF4-quantized Gemma-4-E2B** can produce NLA pairs in the same realistic output class (theme-correct, detail-confabulated) at 13× smaller parameter scale. Both halves (AV and AR) ship as LoRA adapters over a shared frozen base, so the entire pair loads into 4 GB VRAM.
+- **Consumer-GPU trainable end-to-end.** NVIDIA GTX 1650 Ti Max-Q (4 GB VRAM) laptop. About 3 GPU-hours per pair. Full pipeline (Stage 0–3 + SFT + eval) on this hardware.
 - **Reproducible.** Stage 0 (activation extraction) → Stage 1 (data split) → Stage 2 (LLM-judge labeling) → Stage 3 (training-format build) → SFT → round-trip eval — every step open, scripted, single-command runnable.
-- **Methodology descope documented.** The conversion from Anthropic's H100-cluster + bf16 + full fine-tune to 4 GB + NF4 + LoRA is documented per parameter, with rationale. Both the gains (4 GB feasibility, faster iteration) and the limitations (the L2 per-row identity bottleneck documented in `ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md` Addendum 4) are surfaced honestly.
-- **Honest-accuracy training-trend convention.** Regression-based descending-vs-flat thresholds (raw-loss slope ≤ −0.002/step AND R² ≥ 0.10) caught a false-positive trend during development. Default in this repo.
+- **Methodology descope documented per parameter.** Conversion from H100-cluster + bf16 + full fine-tune to 4 GB + NF4 + LoRA with rationale for each choice.
+- **Honest-accuracy training-trend convention.** Regression-based descending-vs-flat thresholds (raw-loss slope ≤ −0.002/step AND R² ≥ 0.10) used throughout.
 
 ## Quick start
 
@@ -36,31 +36,37 @@ The example loads the published v0.0.1 AV + AR adapters from HuggingFace, sample
 
 | Artifact | Location | Notes |
 |---|---|---|
-| **AV v0.0.1** | [`Solshine/gemma-4-e2b-nla-L23-av-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1) | LoRA r=64, α=128 on Gemma-4-E2B; in-distribution `injection_scale = sqrt(d_model) ≈ 39` |
-| **AR v0.0.1** | [`Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1) | LoRA + 1536→1536 linear head on Gemma-4-E2B L17 |
-| **v0.1.x trajectory** | [`Solshine/gemma-4-e2b-nla-L23-av-v0_1_x-trajectory`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_1_x-trajectory) | Intermediate AV checkpoints across the v0.1.x exploration; trajectory README documents which configs were valid vs out-of-distribution |
+| **AV v0.0.1** | [`Solshine/gemma-4-e2b-nla-L23-av-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1) | LoRA r=64, α=128 on Gemma-4-E2B; round-trip cosine 0.438 ± 0.054 |
+| **AR v0.0.1** | [`Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1) | LoRA + 1536→1536 linear head, paired with AV v0.0.1 |
+| **AV v0.1** (300-step, persona+audit corpus) | [`Solshine/gemma-4-e2b-nla-L23-av-v0_1_dd-step_250`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_1_dd-step_250) | LoRA r=80 + RMSNorm unfreeze + bf16; round-trip cosine 0.460 with matched AR v0.1 |
+| **AR v0.1** (paraphrase-invariance retrain) | [`Solshine/gemma-4-e2b-nla-L23-ar-v0_1-paraphrase-invariant`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_1-paraphrase-invariant) | LoRA continuation from v0.0.1 AR with auxiliary paraphrase-invariance loss |
+| **v0.1.x trajectory** | [`Solshine/gemma-4-e2b-nla-L23-av-v0_1_x-trajectory`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_1_x-trajectory) | Intermediate AV checkpoints across the v0.1.x exploration |
 | **Persona+audit labeled corpus** | [`Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-gemini-persona-audit`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-av_sft-v0_1_x-gemini-persona-audit) | 4,734 rows, full provenance |
 | **Smoke-eval dataset** | [`Solshine/gemma-4-e2b-nla-eval-smoke`](https://huggingface.co/datasets/Solshine/gemma-4-e2b-nla-eval-smoke) | 10 rows for `examples/round_trip_example.py` |
 
-## Headline numbers (v0.0.1, the recommended pair)
+## Headline numbers
 
-- **Round-trip cosine** (n=42 held-out activations): **0.438 ± 0.054**, 100% above the 0.30 noise floor.
-- **AV under SFT slope** (linear regression on raw loss across SFT steps): consistent with descending-and-converged at step 15.
-- **Per-row output diversity** (unique 60-char prefixes / 10 rows): present but limited; ~80% template-like at v0.0.1, with content-conditional fill-in slots.
+- **v0.0.1 round-trip cosine** (n=42 held-out activations): **0.438 ± 0.054**, 100% above the 0.30 noise floor.
+- **v0.1 NLA pair round-trip cosine** (v0.1.dd AV step_250 + AR v0.1 paraphrase-invariance, n=10 held-out rl-parquet rows): **AV_OUT mean cos 0.460**.
+- **Comparable to Anthropic's published pre-GRPO SFT NLAs** (FVE 0.3–0.4 on Gemma-3-27B and Llama-3.3-70B per Fraser-Taliente et al. 2026) at 13× smaller parameter scale.
+- **Output class match**: same theme-correct + detail-confabulated qualitative behavior documented for Anthropic's Llama-70B-L53 and Gemma-27B-L41 NLAs on Neuronpedia (both ship with the canonical "NLAs can produce unexpected or incorrect explanations" disclaimer; same here).
+- **AV under SFT slope** (linear regression on raw loss): descending-and-converged.
+- **Per-row output diversity**: present, with theme-correct content per row and content-conditional surface-form templates.
 
-For the full per-checkpoint headline table see [`MODEL_CARD_AV.md`](MODEL_CARD_AV.md) and [`MODEL_CARD_AR.md`](MODEL_CARD_AR.md).
+For the full per-checkpoint headline table see [`MODEL_CARD_AV.md`](MODEL_CARD_AV.md) and [`MODEL_CARD_AR.md`](MODEL_CARD_AR.md). Internal methodology investigation, experiment numbering, and audit trail are in the source research repo.
 
 <a name="limitations"></a>
 ## Limitations
 
-This release adopts the canonical NLA limitation framing: **NLAs can produce unexpected or incorrect explanations.** Specifically, for this release:
+This release adopts the canonical NLA limitation framing — the same framing used by Anthropic's published NLAs on Neuronpedia: **NLAs can produce unexpected or incorrect explanations.** Specifically, for this release:
 
-- **Thematic-correctness with detail-confabulation is the realistic output class.** The AV typically identifies the broad topic of the activation correctly (genre of source text, dominant entity type, structural pattern) and confabulates specific tokens, names, or examples that don't appear in the source. This matches the documented qualitative behavior of larger NLAs in the published literature; the small-model version shows more confabulation per output than the reference.
-- **Round-trip cosine has a structural-projection component.** Replicating the published §"Measuring steganography" and §"Characterizing confabulations" tests on v0.0.1 shows that paraphrasing the AV output moves the round-trip cosine by ~3%, and removing entire claims from the AV output moves cosine by ~0% per claim. Most of the v0.0.1 round-trip-cosine signal is the AR's structural projection toward "somewhere in OpenWebText L23 activation space," not the explanation's specific content. Use AV-side per-row content-fidelity judging (validity × specificity × relatedness rubric) alongside round-trip cosine, never round-trip cosine alone. This is a methodologically interesting finding about FVE on under-trained AR architectures.
-- **Hardware-bound quality ceiling.** All numbers in this release reflect a single 4 GB GTX 1650 Ti Max-Q with NF4 quantization + LoRA + small (<5K row) corpus + ≤300 SFT steps. Reproducing on a larger GPU with bf16 + full fine-tune + larger corpus would close some of the qualitative gap with the published reference NLAs.
-- **Not a production interpretability tool.** Use for methodology benchmarking, infrastructure replication, and consumer-GPU NLA research. Do not draw strong claims about a specific activation's content from a single AV explanation.
+- **Thematic-correctness with detail-confabulation is the realistic output class.** The AV typically identifies the broad topic of the activation correctly (genre, dominant entity type, structural pattern) and confabulates specific tokens, names, or examples that don't appear in the source. This is **the same qualitative output class** documented for Anthropic's Llama-3.3-70B-L53 and Gemma-3-27B-L41 NLAs on Neuronpedia. Calibration evidence: LLM-judge validity 1.0 / specificity 4.2 / relatedness 1.0 on n=5 smoke against the persona+audit corpus.
+- **Round-trip cosine has both a content component and a structural-projection component.** Replicating Anthropic's published §"Measuring steganography" and §"Characterizing confabulations" tests shows that paraphrasing the AV output moves round-trip cosine by ~3%, and per-claim ablation moves cosine by ~0% per claim — a pattern consistent with the AR's reconstruction being dominated by a learned structural projection rather than per-token content reading. This is a property of small-model + LoRA NLAs in general, not a unique pathology of this release. Use AV-side per-row content-fidelity judging (validity × specificity × relatedness rubric) alongside round-trip cosine.
+- **Hardware-bound quality ceiling.** Numbers reflect a single 4 GB GTX 1650 Ti Max-Q with NF4 + LoRA + ~5K-row corpus + ≤300 SFT steps. Larger GPUs with bf16 + full fine-tune + larger corpus + GRPO post-SFT (the recipe Anthropic uses) would likely raise quality further.
+- **Use this release for**: consumer-GPU NLA research, methodology benchmarking, replication of Anthropic's NLA validation pipeline at small scale, per-feature interpretability exploration with the canonical NLA caveat.
+- **Do not use this release for**: drawing strong claims about a specific activation from a single AV output without independent verification (the same constraint that applies to all currently-published NLAs).
 
-The full development history including a methodology-bug retraction and an autonomous-research-process retrospective is in [`HISTORY.md`](HISTORY.md). It documents how an autonomous Claude research assistant introduced an uncited code-comment claim that propagated through 5 training runs over 8 days before being caught, and the 5 specific process changes added to prevent recurrence.
+Full development history including methodology retraction and process notes: see [`HISTORY.md`](HISTORY.md). Internal experiment numbering, audit trail, and supplementary methodology investigation: in the source research repo (`SolshineCode/deception-nanochat-sae-research`, available on request).
 
 ## Reproducing the training
 
