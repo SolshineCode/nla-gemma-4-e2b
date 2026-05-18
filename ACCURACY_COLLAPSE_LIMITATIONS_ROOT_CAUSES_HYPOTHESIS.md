@@ -714,3 +714,74 @@ The lever space accessible on this 4 GB GTX 1650 Ti Max-Q is **exhausted**. Rema
 3. **4090 rental** (~$30, 6-8h). Combines bf16 + full FT + inj=80000 + AR=24 layers. Clean test of all hardware-forced fixes at once.
 
 The publishable story is now: **on a 4 GB consumer GPU regime with NF4 quantization + LoRA, the v0.0.x / v0.1.x NLA methodology produces AVs that converge to fixed templates (paragraph or short-tag) drawn from the training prior, regardless of which single lever is varied (corpus size, training duration, LoRA rank, injection scale, or label format).** This is consistent with the H5 finding that the round-trip-cos metric is content-blind on this stack — but H23 adds the AV-side observation that the AV ITSELF is also content-blind (not just the AR). Hardware-forced quantization + LoRA imposes a hard floor that none of these levers can break.
+
+## Addendum 3 — v0.1.cc + v0.1.dd reframe the AV-side picture: AV is in published-NLA output class; AR is the content-blind component (2026-05-17)
+
+> This addendum revises the AV-side conclusions of the §H23 block above. The framing of "the AV itself is content-blind" was incorrect when calibrated against Anthropic's published NLAs.
+
+**What changed.** Two post-§F72-corrected training runs landed since the H23 block was written: v0.1.cc (250 steps at corrected `injection_scale=39`, long-label corpus) and v0.1.dd (paused at step_260, persona+audit-haiku corpus). The Anthropic-replication eval suite was implemented and calibrated against published NLA outputs on Neuronpedia (Llama-3.3-70B-L53 and Gemma-3-27B-L41 — both ship with the disclaimer "NLAs can produce unexpected or incorrect explanations").
+
+**Calibrated AV-side finding (replaces H23 "AV is content-blind"):**
+
+Our v0.1.cc and v0.1.dd AV outputs are **content-bearing, theme-correct, and detail-confabulated**. Example outputs (v0.1.dd step_100 against rl-parquet eval rows):
+- "Thematic shift from 'social media' to 'online platforms'..."
+- "The model tracks the transition from a specific historical..."
+
+Compared to Anthropic's published Llama-70B NLA on a deception/team-affiliation roleplay (correctly identifies the theme; invents character names and alternate phrasings) and their Gemma-27B NLA on an anagram-of-animal-sounds prompt (correctly produces "duck" and "animal sound"; invents "c-dog", "lion roar", "don"), our AV outputs are in the **same output class** at 13× smaller parameter scale. The earlier "content-blindness" framing missed this calibration.
+
+The fact pattern updated:
+
+| Component | Earlier H23 framing | Calibrated framing (2026-05-17) |
+|---|---|---|
+| v0.1.x AV outputs | "Content-blind, template-collapsed" | "Theme-correct, detail-confabulated — same output class as Anthropic's flagship NLAs at 13× smaller scale" |
+| v0.1.x AR (round-trip projection) | "Cos metric is content-blind on this stack" | "AR is principally a structural projection (~97% content-independent on under-trained NLAs per Addendum 4 in source repo); this is the actual bottleneck for the H15 metric" |
+| H15 AV_OUT−EMPTY delta | "Content-blindness ceiling" | "Plateau is AR-side, not AV-side. +0.018 delta means the AR can't distinguish content-bearing from empty input when projecting back to gold — not that the AV produces empty content" |
+
+**v0.1.dd preliminary H15 data (sweep in flight):**
+
+| step | Δ(AV_OUT − EMPTY) | above v0.0.1 H5 +0.0242? |
+|---:|---:|---|
+| 50 | +0.0192 | no |
+| 100 | +0.0178 | no |
+| 150 | pending | — |
+| 200 | pending | — |
+| 250 | pending | — |
+
+Step counts 50 → 100 sit in the same noise band as v0.1.cc's step_50→step_250 plateau (+0.020 to +0.021) and the v0.0.1 H5 baseline (+0.0242). Provisional verdict: **step count at the corrected baseline does NOT lift the H15 ceiling on a second independent corpus** — extends Addendum 2's "step count is not the lever" finding from the long-label corpus to the persona+audit-haiku corpus.
+
+**Phase A complete (2026-05-18 02:34 PDT) — paraphrase-invariance AR retrain ran 50 SFT steps from v0.0.1 AR.** Three converging pieces of evidence now confirm the structural-projection diagnosis at higher confidence:
+
+**1. Loss-domain diagnostic (Phase A training trace, every step):**
+   `orig` and `para` losses tracked within 0.001-0.013 at *every* step from step 1 onward. The v0.0.1 AR was already paraphrase-invariant in loss before training began — the auxiliary λ·MSE(AR(paraphrase), gold) term had nothing differential to attach to.
+
+**2. Direct Δcos test on n=30 natural paraphrase pairs:**
+
+| Quantity | AR v0.0.1 | AR v0.1 |
+|---|---:|---:|
+| Δcos = cos(AR(orig), gold) − cos(AR(para), gold) | +0.0008 | +0.0011 |
+| cos(AR(orig), AR(paraphrase)) — internal consistency | 0.9929 | 0.9948 |
+| **cos(AR(orig), gold)** — absolute reconstruction | **0.4257** | **0.4966 (+17%)** |
+
+Both AR versions treat orig and paraphrase identically (Δcos ≈ 0). The "baseline +0.014" cited earlier was n=2 measurement noise; n=30 firms zero. But the absolute reconstruction quality lifted by +0.0709 (+17%) — Phase A's loss made the AR a better reconstructor.
+
+**3. H15 head-to-head (v0.1.dd step_250 AV, two ARs, n=10 rl-parquet rows):**
+
+| Input | AR v0.0.1 | AR v0.1 | absolute lift |
+|---|---:|---:|---:|
+| AV_OUT | 0.4221 | 0.4603 | +0.0382 |
+| EMPTY  | 0.4048 | 0.4531 | **+0.0483** |
+| RANDOM | 0.4045 | 0.4525 | **+0.0480** |
+| GIBBER | 0.4137 | 0.4562 | +0.0425 |
+| **Δ(AV_OUT − EMPTY)** | **+0.0174** | **+0.0072** | shrank |
+
+Phase A's auxiliary loss uniformly lifted reconstruction quality across *every input type* — including pure-noise EMPTY, RANDOM, and GIBBER. AV_OUT got the *smallest* absolute lift. The content-loaded differential Δ(AV_OUT−EMPTY) **shrank** from +0.017 to +0.007 because the AR's "background structural projection" got more accurate faster than its content-loaded reading did.
+
+**Definitive interpretation.** AR v0.1 is a **better structural projector**, not a content-reader. Phase A's auxiliary loss cannot break the projection; it can only make the projection more accurate. The three lines of evidence above converge on the same diagnosis from independent methodologies.
+
+**Implication for the "lever space is exhausted" claim.** The original H23-block claim now stands with one update: the paraphrase-invariance AR-side lever has been tested, lifts absolute round-trip cosine, and does *not* break content-blindness. Hardware-feasible AR-side levers on this 4 GB GPU regime are now exhausted. Next-grant direction pivots to cloud GPU + deeper-truncation AR / larger LoRA rank / full-FT / GRPO.
+
+**What's shippable.** The (v0.1.dd step_250 AV, AR v0.1) pair has higher absolute round-trip cosine (mean AV_OUT cos ≈ 0.46) than (v0.0.1 AV, v0.0.1 AR) (mean ~0.42). It is a valid v0.1 NLA pair with the explicit caveat that the H15 content-aware delta is *smaller*, not larger. Same realistic NLA output class as Anthropic's published Neuronpedia models at 13× smaller parameter scale.
+
+**For source-repo references:** the calibrated AV-output-class framing is `FINDINGS.md §F72 Addendum 4` (v0.1.cc smoke confirms confabulation-with-specificity pattern matches published NLA reference). The v0.1.dd findings + AR-bottleneck restated + Phase A 3-piece-evidence are `§F72 Addendum 5`. Both addenda live in the source research repo (private; DM for access).
+
+**Status.** Final for the v0.1.dd / Phase A / 18h grant cycle (2026-05-17 / 2026-05-18). Three converging pieces of evidence for AR structural-projection diagnosis at higher confidence than the H23-era framing.
