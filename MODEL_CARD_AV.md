@@ -126,7 +126,7 @@ Working end-to-end round-trip example with the matched AR: `examples/round_trip_
 - **Template-heavy outputs.** Inspection shows ~80% of held-out-row outputs share a small set of structural templates with content-conditional fill-in slots. Use multiple feature angles + content-judge scoring rather than treating any single output as a verbatim summary of the activation.
 - **Hardware-bound quality ceiling.** Numbers reflect a single 4 GB GTX 1650 Ti Max-Q. Larger consumer GPUs with bf16 + full fine-tune + larger corpus would close some of the qualitative gap with the published reference NLAs.
 
-Full development history including a methodology-bug retraction (§F72) and the autonomous-research-process retrospective: [`HISTORY.md`](https://github.com/SolshineCode/nla-gemma-4-e2b/blob/main/HISTORY.md).
+Full development history and methodology retraction notes: [`HISTORY.md`](https://github.com/SolshineCode/nla-gemma-4-e2b/blob/main/HISTORY.md). Internal experiment numbering and audit trail: source research repo (available on request).
 
 ## Sidecar (training provenance YAML)
 
