@@ -98,8 +98,9 @@ Working end-to-end round-trip example with the matched AV: `examples/round_trip_
 ## What makes this release distinctive
 
 - **First non-Anthropic-team open-source NLA AR** at any model scale.
+- **First LoRA-based NLA AR.** Anthropic's published NLA ARs are full fine-tunes at bf16. This release demonstrates a **LoRA adapter (r=64, α=128) + 1536→1536 linear head + AR truncation at K=18 layers** over NF4-quantized Gemma-4-E2B. Shipping as LoRA + a small head means the AR loads in ~0.6 GB VRAM on top of the frozen NF4 base — the entire matched (AV, AR) pair fits in 4 GB. The L1/L2 structural-projection findings documented in the source repo (`FINDINGS.md §F72`) are properties of this LoRA-AR class at 4 GB scale specifically; they may or may not hold at larger AR capacity / full-FT, which is the open next-grant direction.
 - **Consumer-GPU trainable.** Fits on 4 GB laptop GPU end-to-end alongside the matched AV.
-- **Documented structural-projection behavior.** Standard NLA AR architectures, including this one, produce reconstructions that have a strong structural-projection component independent of the input explanation. See "Limitations" below.
+- **Documented structural-projection behavior with L1/L2 decomposition.** This AR's structural-projection signature has been characterized in two layers: L1 (AV-vs-non-AV style projection, the surface form classifier) is partially solvable at 4 GB with hinge-loss retraining (v0.2 demonstration). L2 (per-AV-output identity — does the AR project AV-output-for-row-i closer to gold-i than to gold-j?) is NOT solvable at 4 GB with the lever space tested. See "Limitations" below + `ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md` Addendum 4 for the cumulative analysis.
 
 ## Limitations
 
