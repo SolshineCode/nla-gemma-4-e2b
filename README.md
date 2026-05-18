@@ -15,9 +15,10 @@ A working pair of NLA adapters for `google/gemma-4-E2B` at residual-stream layer
 ## What makes this release unique
 
 - **First non-Anthropic-team open-source NLA at any scale.** As of 2026-05, every other NLA on HuggingFace Hub is under the `kitft` account (Kit Fraser-Taliente, the paper's first author). This is the second-source replication.
-- **Consumer-GPU trainable.** End-to-end on an NVIDIA GTX 1650 Ti Max-Q (4 GB VRAM) laptop. About 3 GPU-hours for the v0.0.1 pair.
+- **First LoRA-based NLA training.** Anthropic's published NLAs use full fine-tuning at bf16 on H100 clusters. This work demonstrates that **LoRA adapters (r=64–80, α=128) on NF4-quantized Gemma-4-E2B** can produce NLA pairs at the same realistic output class (theme-correct, detail-confabulated) at 13× smaller parameter scale. The LoRA + 4-bit-quant + RMSNorm-unfreeze stack is the architectural choice that makes this entire 4 GB-feasible methodology possible — both halves of the pair (AV and AR) ship as LoRA adapters over the same frozen base, so loading the full pair into 4 GB VRAM is feasible.
+- **Consumer-GPU trainable.** End-to-end on an NVIDIA GTX 1650 Ti Max-Q (4 GB VRAM) laptop. About 3 GPU-hours for the v0.0.1 pair. Full pipeline (Stage 0–3 + SFT + eval) runs on this hardware because of the LoRA + NF4 stack above.
 - **Reproducible.** Stage 0 (activation extraction) → Stage 1 (data split) → Stage 2 (LLM-judge labeling) → Stage 3 (training-format build) → SFT → round-trip eval — every step open, scripted, single-command runnable.
-- **Methodology descope documented.** The conversion from Anthropic's H100-cluster + bf16 + full fine-tune to 4 GB + NF4 + LoRA is documented per parameter, with rationale.
+- **Methodology descope documented.** The conversion from Anthropic's H100-cluster + bf16 + full fine-tune to 4 GB + NF4 + LoRA is documented per parameter, with rationale. Both the gains (4 GB feasibility, faster iteration) and the limitations (the L2 per-row identity bottleneck documented in `ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md` Addendum 4) are surfaced honestly.
 - **Honest-accuracy training-trend convention.** Regression-based descending-vs-flat thresholds (raw-loss slope ≤ −0.002/step AND R² ≥ 0.10) caught a false-positive trend during development. Default in this repo.
 
 ## Quick start
