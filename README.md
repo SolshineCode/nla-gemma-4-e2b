@@ -54,7 +54,7 @@ The example loads the published v0.0.1 AV + AR adapters from HuggingFace, sample
 - **Output format class match**: multi-paragraph descriptive text in the same genre as Anthropic's NLAs. Both ship with the canonical "NLAs can produce unexpected or incorrect explanations" disclaimer.
 - **Content fidelity gap from a 10-row Neuronpedia head-to-head**: Anthropic's NLA correctly names specific people / events / topics in the source text where ours produces more generic linguistic-feature descriptions. See [`results/neuronpedia_comparison_v0_1_dd_vs_gemma_27b.json`](experiments/v8_nla_local/results/content_aware_eval/neuronpedia_comparison_v0_1_dd_vs_gemma_27b.json) (in the source repo) for the per-row data + LLM-judge scores.
 
-For the full per-checkpoint headline table see [`MODEL_CARD_AV.md`](MODEL_CARD_AV.md) and [`MODEL_CARD_AR.md`](MODEL_CARD_AR.md). Internal methodology investigation, experiment numbering, and audit trail are in the source research repo.
+For the full per-checkpoint headline table see [`MODEL_CARD_AV.md`](MODEL_CARD_AV.md) and [`MODEL_CARD_AR.md`](MODEL_CARD_AR.md). For the head-to-head Neuronpedia cross-NLA calibration data + LLM-judge verdicts behind the framing above, see [`RELEASE_CALIBRATION.md`](RELEASE_CALIBRATION.md). Internal methodology investigation, experiment numbering, and audit trail are in the source research repo.
 
 <a name="limitations"></a>
 ## Limitations
