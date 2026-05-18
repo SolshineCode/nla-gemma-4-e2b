@@ -11,9 +11,11 @@ This document is the source-of-truth honest positioning for what this release do
 | Metric | Anthropic Gemma-3-27B (kitft-l41) | Anthropic Llama-3.3-70B (kitft-l53) | Our v0.1 (Gemma-4-E2B) |
 |---|---:|---:|---:|
 | Round-trip cosine (their API field / our eval) | ~0.99 | ~0.99 | 0.46 |
-| LLM-judge validity (1-5, n=10) | 3.1 | _pending_ | 1.0 |
-| LLM-judge specificity (1-5, n=10) | 3.2 | _pending_ | 1.2 |
-| Judge preference (out of 10 rows) | 10 | _pending_ | 0 |
+| LLM-judge validity (1-5, n=10) | **3.1** | **3.2** | **1.0** |
+| LLM-judge specificity (1-5, n=10) | **3.2** | **3.3** | **1.2** |
+| Judge preference (out of 10 rows) | **10** | **10** | **0** |
+
+Across both Anthropic NLAs the picture is identical: **20/20 judge preferences for Anthropic, 0 for ours, 0 ties.** Even Anthropic's deployed NLAs average only 3.1-3.3 on a 1-5 validity scale ("partially correct theme") — they're good but not perfect; the canonical "NLAs can produce unexpected or incorrect explanations" caveat applies to all NLAs at any scale. But the gap between Anthropic's ~3.15 and our 1.0 is real and reproducible across two independent reference NLAs.
 
 Per-row data + judge verdicts: `experiments/v8_nla_local/results/content_aware_eval/neuronpedia_*.json` in the source research repo.
 
