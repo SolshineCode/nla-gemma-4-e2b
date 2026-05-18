@@ -714,3 +714,43 @@ The lever space accessible on this 4 GB GTX 1650 Ti Max-Q is **exhausted**. Rema
 3. **4090 rental** (~$30, 6-8h). Combines bf16 + full FT + inj=80000 + AR=24 layers. Clean test of all hardware-forced fixes at once.
 
 The publishable story is now: **on a 4 GB consumer GPU regime with NF4 quantization + LoRA, the v0.0.x / v0.1.x NLA methodology produces AVs that converge to fixed templates (paragraph or short-tag) drawn from the training prior, regardless of which single lever is varied (corpus size, training duration, LoRA rank, injection scale, or label format).** This is consistent with the H5 finding that the round-trip-cos metric is content-blind on this stack — but H23 adds the AV-side observation that the AV ITSELF is also content-blind (not just the AR). Hardware-forced quantization + LoRA imposes a hard floor that none of these levers can break.
+
+## Addendum 3 — v0.1.cc + v0.1.dd reframe the AV-side picture: AV is in published-NLA output class; AR is the content-blind component (2026-05-17)
+
+> This addendum revises the AV-side conclusions of the §H23 block above. The framing of "the AV itself is content-blind" was incorrect when calibrated against Anthropic's published NLAs.
+
+**What changed.** Two post-§F72-corrected training runs landed since the H23 block was written: v0.1.cc (250 steps at corrected `injection_scale=39`, long-label corpus) and v0.1.dd (paused at step_260, persona+audit-haiku corpus). The Anthropic-replication eval suite was implemented and calibrated against published NLA outputs on Neuronpedia (Llama-3.3-70B-L53 and Gemma-3-27B-L41 — both ship with the disclaimer "NLAs can produce unexpected or incorrect explanations").
+
+**Calibrated AV-side finding (replaces H23 "AV is content-blind"):**
+
+Our v0.1.cc and v0.1.dd AV outputs are **content-bearing, theme-correct, and detail-confabulated**. Example outputs (v0.1.dd step_100 against rl-parquet eval rows):
+- "Thematic shift from 'social media' to 'online platforms'..."
+- "The model tracks the transition from a specific historical..."
+
+Compared to Anthropic's published Llama-70B NLA on a deception/team-affiliation roleplay (correctly identifies the theme; invents character names and alternate phrasings) and their Gemma-27B NLA on an anagram-of-animal-sounds prompt (correctly produces "duck" and "animal sound"; invents "c-dog", "lion roar", "don"), our AV outputs are in the **same output class** at 13× smaller parameter scale. The earlier "content-blindness" framing missed this calibration.
+
+The fact pattern updated:
+
+| Component | Earlier H23 framing | Calibrated framing (2026-05-17) |
+|---|---|---|
+| v0.1.x AV outputs | "Content-blind, template-collapsed" | "Theme-correct, detail-confabulated — same output class as Anthropic's flagship NLAs at 13× smaller scale" |
+| v0.1.x AR (round-trip projection) | "Cos metric is content-blind on this stack" | "AR is principally a structural projection (~97% content-independent on under-trained NLAs per Addendum 4 in source repo); this is the actual bottleneck for the H15 metric" |
+| H15 AV_OUT−EMPTY delta | "Content-blindness ceiling" | "Plateau is AR-side, not AV-side. +0.018 delta means the AR can't distinguish content-bearing from empty input when projecting back to gold — not that the AV produces empty content" |
+
+**v0.1.dd preliminary H15 data (sweep in flight):**
+
+| step | Δ(AV_OUT − EMPTY) | above v0.0.1 H5 +0.0242? |
+|---:|---:|---|
+| 50 | +0.0192 | no |
+| 100 | +0.0178 | no |
+| 150 | pending | — |
+| 200 | pending | — |
+| 250 | pending | — |
+
+Step counts 50 → 100 sit in the same noise band as v0.1.cc's step_50→step_250 plateau (+0.020 to +0.021) and the v0.0.1 H5 baseline (+0.0242). Provisional verdict: **step count at the corrected baseline does NOT lift the H15 ceiling on a second independent corpus** — extends Addendum 2's "step count is not the lever" finding from the long-label corpus to the persona+audit-haiku corpus.
+
+**Next-step direction.** Phase A (paraphrase-invariance AR retrain, `stage_ar_sft_v0_1.py` in source repo, pre-staged with a 696-row paraphrase corpus built from natural labeler-v1 / auditor-v2 explanation pairs from the same persona+audit-haiku stage) directly attacks the AR-side bottleneck rather than the AV-side. If it lifts the AR's `cos(AR(orig), AR(paraphrase))` materially relative to v0.0.1's +0.014 baseline, the structural projection loosens — which is the load-bearing intervention to test next on this hardware. Running during the extended GPU grant ending 07:13 PDT 2026-05-18; results will be added as a follow-up addendum.
+
+**For source-repo references:** the calibrated AV-output-class framing is `FINDINGS.md §F72 Addendum 4` (v0.1.cc smoke confirms confabulation-with-specificity pattern matches published NLA reference). The v0.1.dd preliminary findings + AR-bottleneck restated are `§F72 Addendum 5`. Both addenda live in the source research repo (private; DM for access).
+
+**Status.** The "lever space is exhausted on 4 GB" statement in the H23 block above remains accurate for the original lever set (corpus size, training duration, LoRA rank, injection scale, label format) — but the **AR-side lever (paraphrase-invariance retrain) had not been tested when that statement was written.** Phase A is the open hardware-feasible direction. This addendum will be extended with Phase A results before merge.
