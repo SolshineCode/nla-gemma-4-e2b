@@ -74,13 +74,29 @@ The hardware / methodology gap explains the fidelity gap:
 
 ## Methodology of this comparison
 
-1. **Sample**: 10 rows from a held-out RL eval parquet (politically-themed news / op-eds; Fineweb-style source texts)
+1. **Sample**: 10 rows initially, extended to n=50 on 2026-05-19, from a held-out RL eval parquet (politically-themed news / op-eds; Fineweb-style source texts)
 2. **Activation site**: last token of each source text after running through the target model
-3. **Anthropic side**: `POST /api/nla/explain` on neuronpedia.org with each (text, last_position) pair
-4. **Our side**: run v0.1.dd step_250 AV + AR v0.1 paraphrase-invariance pair locally on the matched activation
-5. **LLM judge**: Claude scored each (source, anthropic_explanation, our_explanation) on validity + specificity (1-5) + preferred (anthropic/ours/tie)
+3. **Anthropic side**: `POST /api/nla/explain` on neuronpedia.org with each (text, last_position) pair — running against Anthropic's deployed Gemma-3-27B or Llama-3.3-70B NLAs
+4. **Our side**: run v0.1.dd step_250 AV + AR v0.1 paraphrase-invariance pair locally on the matched activation — running against our own Gemma-4-E2B model
+5. **LLM judge**: scored each (source, anthropic_explanation, our_explanation) on validity + specificity (1-5) + preferred. Two-judge cross-validation: Claude judge (49/50 anthropic preferred) and Gemini judge with explicit size-gap calibration in the prompt (48/49 valid preferred anthropic, 1 tie) both return the same verdict.
 
-Full harness in source repo: `experiments/v8_nla_local/results/content_aware_eval/neuronpedia_comparison.py` + `judge_neuronpedia_comparison.py`.
+Full harness in source repo: `experiments/v8_nla_local/results/content_aware_eval/{neuronpedia_comparison.py, judge_neuronpedia_comparison.py, judge_neuronpedia_comparison_gemini.py}`.
+
+## Important caveat — what this comparison is and is not measuring
+
+The "Anthropic preferred N/N" framing is honest about what we measured but compounds two effects that the comparison cannot disentangle:
+
+1. **Cross-NLA capability gap.** Anthropic's NLAs are full-FT + GRPO on bf16 27B/70B parameters with extensive training compute. Ours is LoRA r=80 + NF4 4-bit + 50-300 step SFT on 2B parameters at 4 GB VRAM. This is the gap we set out to characterize.
+
+2. **Cross-model activation gap.** Anthropic's NLAs read 27B-Gemma-3 L41 / 70B-Llama-3.3 L53 activations on a given source text. Ours reads 2B-Gemma-4-E2B L23 activations on the same source text. These are different objects — different model families, different layers, different dimensionalities, and (per superposition theory) different per-neuron polysemanticity. The two activations may encode genuinely different concepts even when derived from identical source text.
+
+When a 27B L41 activation resolves to "Hillary Clinton primary momentum" and our 2B L23 activation only resolves to broader "political-news content," some of that is **our NLA being worse at content reading** (the gap we wanted to measure) and some is **the underlying 2B L23 activation actually encoding less per-instance specificity** (an intrinsic model property our NLA can't compensate for). With current data we cannot disentangle the two.
+
+The clean test that would disentangle these factors: train an NLA on Gemma-3-27B L41 using OUR exact recipe (LoRA r=80, NF4 4-bit, 50-step SFT, same labeled corpus extracted at L41). If L2 cross-row argmax + Δmse lift substantially on 27B-at-our-recipe, polysemanticity-at-2B-scale is the dominant factor and there's an intrinsic ceiling our NLA approaches. If they don't lift, training-stack constraints (LoRA + NF4 + step count) are the bottleneck and model size is incidental. Until that experiment runs, the honest characterization is that both factors compound and we don't know the relative weight. ~30-50 A100-hr on cloud GPU; flagged for next-grant work.
+
+**Implication for the v0.0.1 + v0.1 release.** The v0.0.1 + v0.1 pair is **the only NLA that reads Gemma-4-E2B L23 activations.** There is no published reference NLA for this model+layer combination — Anthropic's deployed NLAs are on different models entirely. For someone interested in Gemma-4-E2B specifically, our own internal L1a/L1b/L2 metrics (the cross-row identity test, the per-claim Δmse probe, the held-out factual/gibber discrimination) are the right calibration tools — not the cross-NLA comparison against different-model NLAs. The cross-NLA comparison is informative for "what content-fidelity looks like at full-FT + GRPO + larger-model scale" but it isn't a like-for-like benchmark for our model+layer.
+
+Full discussion in source repo: `FINDINGS.md` §F72 Addendum 11 (polysemanticity-at-scale hypothesis + the clean disentangling experiment).
 
 ## Acknowledgments
 
