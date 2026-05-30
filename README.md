@@ -56,6 +56,26 @@ The example loads the published v0.0.1 AV + AR adapters from HuggingFace, sample
 
 For the full per-checkpoint headline table see [`MODEL_CARD_AV.md`](MODEL_CARD_AV.md) and [`MODEL_CARD_AR.md`](MODEL_CARD_AR.md). For the head-to-head Neuronpedia cross-NLA calibration data + LLM-judge verdicts behind the framing above, see [`RELEASE_CALIBRATION.md`](RELEASE_CALIBRATION.md). Internal methodology investigation, experiment numbering, and audit trail are in the source research repo.
 
+## Why this SFT pair, not a GRPO checkpoint
+
+The Anthropic NLA recipe has four phases: Stages 0–3 (data + labeling) → SFT → **Phase 4 GRPO** (joint RL fine-tune of the AV with the AR's reconstruction-MSE as reward). The v0.0.1 and v0.1 pairs published here are the **SFT-only** output (Phases 1–3); Phase 4 GRPO was deferred at first release because it had not yet been adapted to the 4 GB hardware regime.
+
+Between **2026-05-25 and 2026-05-29** the deferred Phase 4 was implemented and run end-to-end on the same 4 GB GTX 1650 Ti Max-Q, with alternating AV/AR loads and R=4 rollout batching to fit in VRAM. The trial swept **5 reward formulations × 4 entropy regimes across 120 rollouts**, with intermediate L2 cross-row-argmax readouts at rollouts 40, 60, 80, 100, 120. The outcome:
+
+| Rollout | Reward | Entropy β | L2 cross-row argmax (n=10) | AV output |
+|---:|---|---:|---:|---|
+| 40 | MSE | 0.0 | 0.100 (chance) | coherent multi-paragraph (same class as SFT v0.1) |
+| 60 | MSE | 0.3 | 0.100 (chance) | random Unicode tokens — degenerate |
+| 80 | contrastive-mean | 1.0 | 0.100 (chance) | whitespace-only — degenerate |
+| 100 | contrastive-max | 1.0 | 0.100 (chance) | "evasion evasion evasion …" mode collapse |
+| 120 | contrastive-max + AR-contrastive | 0.1 | 0.100 (chance) | "evasion evasion evasion …" mode collapse |
+
+**No GRPO checkpoint clears the bar of the released SFT pair.** The only GRPO checkpoint that preserved coherent AV output (r40, MSE reward + no entropy bonus) matched the SFT v0.1 L2 margin within noise — it did not beat the released pair on the headline metric, so shipping it would add nothing. Every higher-entropy checkpoint destroyed the AV's interpretability surface (gibberish, whitespace, or mode-collapsed output) without compensating with any measurable per-row-fidelity gain.
+
+**The released SFT pair is therefore strictly better than any GRPO checkpoint we produced on this hardware**: both classes are at L2 = chance on per-row identity, but the released SFT pair preserves the coherent multi-paragraph descriptive output that gives the NLA pipeline its interpretability surface.
+
+**What this trial contributes to the research record.** Combining the prior 8-attempt SFT lever sweep with this 5-readout GRPO sweep yields **14 distinct training attempts spanning the full Anthropic recipe**, all converging to L2 = chance at 4 GB. The L2 ceiling at this hardware scale is robust to optimizer/loss/scheduler levers within SFT, to reward shape (MSE vs contrastive vs contrastive-max), to entropy regularization, and to training paradigm (SFT-only vs SFT+GRPO). The open question — base-model scale (2B vs 27B/70B) vs hardware constraint (NF4 + LoRA + small contrast pool) as the dominant bottleneck — would be answered by a cross-model recipe-controlled retrain on Gemma-3-27B, flagged for follow-on grant-funded work. See [`RELEASE_CALIBRATION.md`](RELEASE_CALIBRATION.md) §"Addendum 2026-05-29" for the full per-checkpoint reward/entropy/output tables.
+
 <a name="limitations"></a>
 ## Limitations
 

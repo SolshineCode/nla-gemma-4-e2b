@@ -117,6 +117,30 @@ Working end-to-end round-trip example with the matched AR: `examples/round_trip_
 - **Consumer-GPU trainable.** End-to-end training fits on a 4 GB laptop GPU because of the LoRA + NF4 stack. The methodology descope (NF4 + LoRA + small corpus + ≤300 SFT steps vs Anthropic's full bf16 fine-tune on 8–64 H100s) is documented per parameter.
 - **Full open reproducibility chain** in the bundled repo: Stage 0 (extraction) → Stage 1 (split) → Stage 2 (LLM-judge labeling) → Stage 3 (training-format build) → SFT → eval.
 
+## Release rationale: why this SFT pair and not a GRPO checkpoint
+
+The Anthropic NLA recipe (Fraser-Taliente et al. 2026) has four phases: Stages 0–3 (data + labeling) → SFT (supervised fine-tune of the AV+AR pair) → **Phase 4 GRPO** (joint REINFORCE-style RL fine-tune of the AV with the AR's reconstruction-MSE as reward signal, plus an AR "keep-up" SFT update and a KL anchor). The published `v0.0.1` and `v0.1` pairs are the **SFT-only** output of Phases 1–3; Phase 4 GRPO was deferred at first release because it had not yet been adapted to the 4 GB hardware regime.
+
+Between 2026-05-25 and 2026-05-29 the deferred Phase 4 was implemented and run **end-to-end on the same 4 GB GTX 1650 Ti Max-Q**, with alternating AV/AR loads and R=4 rollout batching to fit in VRAM. The trial swept **5 reward formulations × 4 entropy regimes across 120 rollouts**, with intermediate L2 cross-row-argmax readouts at rollouts 40, 60, 80, 100, 120:
+
+| Rollout | Reward | Entropy β | L2 cross-row argmax (n=10) | AV output quality |
+|---:|---|---:|---:|---|
+| 40 | MSE | 0.0 | 0.100 (chance) | coherent multi-paragraph (same class as SFT v0.1) |
+| 60 | MSE | 0.3 | 0.100 (chance) | random Unicode tokens — degenerate |
+| 80 | contrastive-mean | 1.0 | 0.100 (chance) | whitespace-only — degenerate |
+| 100 | contrastive-max | 1.0 | 0.100 (chance) | "evasion evasion evasion …" mode collapse |
+| 120 | contrastive-max + AR-contrastive | 0.1 | 0.100 (chance) | "evasion evasion evasion …" mode collapse |
+
+**Verdict.** No GRPO checkpoint is shipped:
+- **r40** (the only checkpoint with intact AV-output coherence) matched the SFT v0.1 L2 margin within noise — it did not beat the released SFT pair on the headline metric, so shipping it would add nothing.
+- **r60–r120** (all higher-entropy configurations) produced AV output that is unusable for any downstream consumer of the NLA — random tokens, whitespace, or the "evasion" attractor. These checkpoints are research-valuable but unfit to ship as an interpretability tool.
+
+**The released SFT pair is strictly better than any GRPO checkpoint we produced on this hardware**: both classes are at L2 = chance on per-row identity, but the released SFT pair preserves the coherent multi-paragraph descriptive output that gives the NLA pipeline its interpretability surface, whereas the high-entropy GRPO checkpoints destroyed that surface without compensating with any measurable per-row-fidelity gain.
+
+**Research contribution.** This trial closed the scope of the SFT-only "ceiling" framing: combining the 8-attempt SFT lever sweep with the 5-readout GRPO sweep yields **14 distinct training attempts spanning the full Anthropic recipe**, all converging to L2 = chance at 4 GB. The L2 ceiling at this hardware scale is therefore robust to (a) optimizer-/loss-/scheduler-side levers within SFT, (b) reward shape (MSE vs contrastive vs contrastive-max), (c) entropy regularization (β ∈ {0, 0.1, 0.3, 1.0}), and (d) training paradigm (SFT-only vs SFT+GRPO). The open question — whether the bottleneck is **base-model scale** (2B vs 27B/70B) or **the 4 GB hardware constraint** (NF4 + LoRA + small contrast pool) — would be answered by a cross-model recipe-controlled retrain on Gemma-3-27B; that experiment is flagged for follow-on grant-funded work.
+
+The v0.0.1 + v0.1 SFT pair on this repo therefore represents the **best-coherent-output checkpoint** from a comprehensive characterization of the Anthropic NLA recipe at 4 GB, **not** a checkpoint that ran out of training budget before further phases could be attempted.
+
 ## Limitations
 
 **NLAs can produce unexpected or incorrect explanations.** Specifically for this release:

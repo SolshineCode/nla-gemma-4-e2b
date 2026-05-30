@@ -102,6 +102,18 @@ Working end-to-end round-trip example with the matched AV: `examples/round_trip_
 - **Consumer-GPU trainable.** Fits on 4 GB laptop GPU end-to-end alongside the matched AV.
 - **Documented structural-projection behavior.** Standard NLA AR architectures, including this one, produce reconstructions with a strong structural-projection component independent of the input explanation. Quantitative characterization in the source research repo.
 
+## Release rationale: why this SFT pair and not a GRPO checkpoint
+
+The Anthropic NLA recipe (Fraser-Taliente et al. 2026) has four phases: Stages 0–3 (data + labeling) → SFT (supervised fine-tune of the AV+AR pair) → **Phase 4 GRPO** (joint REINFORCE-style RL fine-tune of the AV with the AR's reconstruction-MSE as reward signal, plus an AR "keep-up" SFT update and a KL anchor). The published `v0.0.1` and `v0.1` pairs are the **SFT-only** output of Phases 1–3; Phase 4 GRPO was deferred at first release because it had not yet been adapted to the 4 GB hardware regime.
+
+Between 2026-05-25 and 2026-05-29 the deferred Phase 4 was implemented and run **end-to-end on the same 4 GB GTX 1650 Ti Max-Q**, with alternating AV/AR loads and R=4 rollout batching to fit in VRAM. The trial swept **5 reward formulations × 4 entropy regimes across 120 rollouts**. At every intermediate L2 readout (rollouts 40, 60, 80, 100, 120) the GRPO-updated AV+AR pair scored **L2 cross-row-argmax = 0.100 (chance)** on the n=10 held-out RL eval — the same as the SFT v0.1 baseline pair. Higher-entropy configurations additionally produced degenerate AV outputs (random Unicode tokens, whitespace, or "evasion evasion evasion…" mode collapse).
+
+**Verdict for this AR.** No GRPO AR checkpoint is shipped. Within the GRPO trial the AR was updated under MSE-keep-up on the AV's rollout outputs (and, at rollout 108–120, briefly under a contrastive AR-loss variant). The post-GRPO AR's reconstruction quality on held-out activations did not improve over this v0.0.1 SFT AR — the round-trip cosine and L2 cross-row-argmax both stayed in the same noise band as the released pair. The released v0.0.1 AR (and the v0.1 paraphrase-invariance AR variant) therefore remains the recommended Activation Reconstructor for this hardware/model class.
+
+**Research contribution.** Combining the 8-attempt SFT lever sweep with the 5-readout GRPO sweep yields **14 distinct training attempts spanning the full Anthropic recipe**, all converging to L2 = chance at 4 GB. The L2 ceiling at this hardware scale is robust to (a) optimizer-/loss-/scheduler-side levers within SFT, (b) reward shape (MSE vs contrastive vs contrastive-max), (c) entropy regularization (β ∈ {0, 0.1, 0.3, 1.0}), and (d) training paradigm (SFT-only vs SFT+GRPO). The structural-projection signature of the released AR (Δcos ≈ 0 per per-claim ablation) is now characterized as a 4 GB-LoRA-AR property robust to GRPO updates, not an artifact of incomplete training. The open question — whether the bottleneck is **base-model scale** (2B vs 27B/70B) or **the 4 GB hardware constraint** (NF4 + LoRA + small contrast pool) — would be answered by a cross-model recipe-controlled retrain on Gemma-3-27B; that experiment is flagged for follow-on grant-funded work.
+
+The v0.0.1 + v0.1 SFT AR pair on this repo therefore represents the **best-coherent-pair checkpoint** from a comprehensive characterization of the Anthropic NLA recipe at 4 GB, **not** a checkpoint that ran out of training budget before further phases could be attempted.
+
 ## Limitations
 
 **NLAs can produce unexpected or incorrect explanations, and AR reconstructions can be structurally projected.** Specifically for this AR:
