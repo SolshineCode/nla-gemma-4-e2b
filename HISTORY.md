@@ -179,6 +179,46 @@ The source research repo (`SolshineCode/deception-nanochat-sae-research`, availa
 
 ---
 
+## 2026-05-25 to 2026-05-29 — Phase 4 GRPO at 4 GB: end-to-end test, L2 = chance
+
+The previously-skipped Phase 4 of the Anthropic NLA recipe (joint GRPO RL fine-tune with AR-MSE-as-reward) was implemented and run end-to-end on the same 4 GB GTX 1650 Ti Max-Q hardware between 2026-05-25 and 2026-05-29.  The motivation was to close the scope of the prior "8-attempt SFT-only ceiling" framing — the SFT lever space had been exhausted without ever testing the recipe's last RL stage, leaving open the question of whether the L2 ceiling at this hardware scale was specific to SFT or robust to the full recipe.
+
+**Implementation.**  Single-file `autoresearch/grpo.py` in the source research repo (~1,000 LoC).  Path A "alternating loads" architecture:  AV resident for sampling N=4 activations × K=4 explanations per rollout, then unload + load AR for scoring, then unload + load AV for REINFORCE backward.  Batched R=4 rollouts per load cycle.  Resumable from per-checkpoint `av/` + `ar/` snapshots.
+
+**What was tested across 120 cumulative rollouts.**  Five reward formulations × three entropy-bonus levels × two AR-keepup loss choices:
+
+- Reward kinds: `mse` (raw −MSE against gold), `contrastive_mean` (cos vs mean wrong gold), `contrastive_max` (cos vs max wrong gold = soft L2 metric)
+- Entropy bonus β: 0, 0.3, 1.0, 0.1
+- AR-keeps-up loss: MSE vs contrastive
+
+**Five inline L2 readouts** at rollouts 40, 60, 80, 100, 120:
+
+| ckpt | reward at end-of-segment | ent_bonus | L2 argmax | mean margin | AV output quality |
+|---|---|---:|---:|---:|---|
+| r40 | mse | 0 | 0.100 | −0.149 | coherent multi-paragraph |
+| r60 | cmean | 1.0 | 0.100 | **−0.130** | gibberish (high-entropy degenerate) |
+| r80 | cmean | 0.3 | 0.100 | −0.145 | whitespace only |
+| r100 | cmax | 0.1 | 0.100 | −0.145 | "evasion evasion evasion …" |
+| r120 | cmax | 0.1 (revert) | 0.100 | −0.151 | "evasion evasion evasion …" |
+
+**Combined finding (this entry + ACCURACY_COLLAPSE doc).**  The cumulative picture across SFT + GRPO is **14 distinct attempts at L2 = 0.100**, spanning the full Anthropic NLA recipe at this hardware scale.  L2 is invariant to:
+
+- AR truncation depth (K=18, K=24)
+- Reward formulation (mse, paraphrase, noise-hinge, cross-row-hinge, contrastive-mean, contrastive-max)
+- Training paradigm (SFT-only, GRPO with AR-as-reward)
+- Entropy regime (0.88 to 4.21)
+- AR-keepup loss (MSE, contrastive)
+
+**Train-vs-eval transfer gap is the load-bearing failure mode.**  Under `contrastive_max` + light entropy bonus, the AV's within-rollout reward improved cleanly: g20 mean −0.119 → g23 mean −0.065 (+46% gap closure on the in-rollout 4-act gold pool).  Eval margin on the 10 held-out RL rows in the same 24-rollout window: r80 −0.145 → r100 −0.145.  **Exactly zero movement.**
+
+**Second failure mode beyond L2: AV output degeneracy at high entropy.**  Inspection of per-checkpoint AV explanations reveals that the entropy-bonus levers (β > 0) push the AV into modes that produce unusable text — random Unicode tokens at r60, whitespace at r80, the "evasion" attractor at r100/r120.  Only r40 (after MSE-reward GRPO with no entropy bonus) preserves coherent NLA-style output, and at L2 metric indistinguishable from the SFT v0.1 baseline.
+
+**No GRPO checkpoint is shipped.**  Specifically rejected from the release: r40 (no L2 improvement; same as baseline), r60–r120 (degenerate outputs).  The v0.0.1 + v0.1 SFT pair remains the recommended release.
+
+**What this lets us conclude about the released pair.**  The 4 GB-LoRA-NF4-LoRA-r=64 architecture has a robust per-row identity ceiling at L2 = chance.  This is not a property that can be optimized away with reward shaping, entropy regularization, or longer training on the same hardware.  The proposed clean disentangling experiment (cross-model + recipe-controlled training on Gemma-3-27B L41 — see `RELEASE_CALIBRATION.md` Addendum 2026-05-29) remains the load-bearing missing data point for *why* the ceiling exists.
+
+Full evidence + per-rollout reward/entropy/loss traces + per-checkpoint cosine matrices:  source research repo `experiments/v8_nla_local/autoresearch/notes/GRPO_CEILING_FINDING_2026-05-29.md` plus the autoresearch loop's 25+ commit lineage on the `autoresearch-scaffolding` branch.
+
 ## Cross-references
 
 - Source research repo: `SolshineCode/deception-nanochat-sae-research` (private; DM for access)
