@@ -98,6 +98,18 @@ The clean test that would disentangle these factors: train an NLA on Gemma-3-27B
 
 Full discussion in source repo: `FINDINGS.md` §F72 Addendum 11 (polysemanticity-at-scale hypothesis + the clean disentangling experiment).
 
+## Addendum 2026-05-29 — Phase 4 GRPO at 4 GB also produces L2 = chance
+
+Between 2026-05-25 and 2026-05-29 we ran the previously-skipped Phase 4 GRPO post-SFT step of the Anthropic NLA recipe end-to-end on the same 4 GB GTX 1650 Ti Max-Q, across **120 rollouts** under **five reward formulations** (`mse`, `contrastive_mean`, `contrastive_max`) × **three entropy regimes** (`β=0`, `0.3`, `1.0`, `0.1`) × **MSE vs contrastive AR-keepup loss**.  Five intermediate L2 readouts (at rollouts 40, 60, 80, 100, 120) all show **L2 cross-row argmax accuracy = 0.100 (chance)** on the n=10 seed=0 eval; mean margin oscillates between −0.130 and −0.151 in a noise band around −0.14 — the same range as the pre-GRPO v0.1 pair.
+
+A qualitative inspection of the AV outputs at each checkpoint surfaces a *second* failure mode beyond L2 invariance: the rollouts at high entropy bonus (r60: entropy ≈ 1.7; r80–r120: entropy ≈ 4.0) produce **degenerate AV outputs** — random Unicode tokens at r60, whitespace at r80, mode-collapsed "evasion evasion evasion …" at r100/r120.  Only the r40 checkpoint (after MSE-reward GRPO with no entropy bonus) preserves the coherent multi-paragraph NLA-style output of the SFT v0.1 baseline, and its margin (−0.149) is statistically indistinguishable from the SFT baseline.
+
+This adds a new empirical fact to the cross-NLA characterization above: combining (a) the 8-attempt SFT-only ceiling documented in `ACCURACY_COLLAPSE_LIMITATIONS_ROOT_CAUSES_HYPOTHESIS.md` and (b) this 5-readout GRPO ceiling, **the cumulative 14-attempt picture spans the full Anthropic NLA recipe at 4 GB and produces L2 = chance under every tested loss + entropy + training-paradigm configuration**.  No checkpoint from the GRPO loop is shipped because none of them clear the bar of the existing v0.0.1 + v0.1 SFT release.
+
+The proposed clean disentangling experiment (cross-model + recipe-controlled training on Gemma-3-27B L41) remains the load-bearing missing data point.  This GRPO result strengthens the case that the disentangling experiment is the right next test — the 4 GB ceiling is robust to both training paradigms, so the open question is whether the bottleneck is the **base model scale** (2B vs 27B/70B) or the **at-4 GB hardware constraint** (LoRA + NF4 + small contrast pool).
+
+Full discussion + per-checkpoint margin/output/entropy/reward tables in source repo: `experiments/v8_nla_local/autoresearch/notes/GRPO_CEILING_FINDING_2026-05-29.md`.
+
 ## Acknowledgments
 
 Thanks to [Neuronpedia](https://www.neuronpedia.org/) for the public NLA API that made this calibration possible. Thanks to Anthropic / Kit Fraser-Taliente et al. for the open-source [NLA methodology and reference checkpoints](https://transformer-circuits.pub/2026/nla/).
