@@ -239,14 +239,14 @@ Following the methodology audit, ran a within-Gemma-3-family scale-controlled te
 
 **Method.** Identical recipe to released v0.1 (LoRA r=64 α=128 on NF4 base, AdamW-8bit lr=1e-4, grad-accum=16, 512 max length, 50 SFT steps each AV+AR, 0.1×eye identity-init AR linear head). Same 4 GB GTX 1650 Ti Max-Q. Training data: 360 AV / 168 AR rows built by joining fresh Gemma-3-1B L17 activations on the 800 FineWeb-Edu positions from v0.2 stage0 with v0.2's existing persona+audit labels by (doc_id, n_raw_tokens) — same labels, same source text, fresh activations.
 
-**Result.** Eval on n=40 (4 seeds × n=10) on a 272-row TRUE held-out subset (rows NOT in either training set):
+**Result.** Eval on n=100 (10 seeds × n=10) on a 272-row TRUE held-out subset (rows NOT in either training set):
 
-| Metric | Released Gemma-4-E2B v0.1 (14 attempts) | Gemma-3-1B (n=40) |
+| Metric | Released Gemma-4-E2B v0.1 (14 attempts) | Gemma-3-1B (n=100) |
 |---|---:|---:|
-| Round-trip cos | 0.460 ± 0.054 | 0.9712 ± 0.006 |
-| L1 noise gap | +0.195 | +0.0039 |
-| **L2 argmax acc** | **0.100 (chance, 14/14)** | **0.400 (4× chance, p < 10⁻⁶)** |
-| L2 mean margin | −0.149 | +0.0016 |
+| Round-trip cos | 0.460 ± 0.054 | 0.9709 |
+| L1 noise gap | +0.195 | +0.0036 |
+| **L2 argmax acc** | **0.100 (chance, 14/14)** | **0.280 (~2.8× chance; Wilson 95% CI [0.20, 0.38]; p < 4 × 10⁻⁷)** |
+| L2 mean margin | −0.149 | +0.0017 |
 
 **Verdict.** The 14-attempt L2 = chance ceiling on Gemma-4-E2B does NOT generalize to Gemma-3-1B at the same recipe. The "4 GB-LoRA-NF4 ceiling is robust to model family" framing previously hedged in the 2026-05-29 addendum is empirically rejected. The Gemma-4-E2B L2 failure has a model-family-specific or architecture-specific component, not solely a hardware constraint.
 

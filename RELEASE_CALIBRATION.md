@@ -146,16 +146,16 @@ The training data is a cross-family JOIN: Gemma-3-1B L17 activations were re-ext
 
 Note that Gemma-3-4B at the same recipe was tried first and pivoted: Gemma-3-4B NF4 base alone fills 3.23 GB of 4.29 GB total VRAM, leaving 0.18 GB free — insufficient for LoRA + grads + 8-bit AdamW state (~600 MB additional needed). Gemma-3-1B is the largest within-family model that fits the standard recipe at 4 GB.
 
-**Result.** L2 cross-row argmax accuracy on n=40 (4 seeds × n=10 each) on a TRUE held-out subset of 272 source-text positions NOT in either training set:
+**Result.** L2 cross-row argmax accuracy on n=100 (10 seeds × n=10 each) on a TRUE held-out subset of 272 source-text positions NOT in either training set:
 
-| Metric | Released Gemma-4-E2B v0.1 (14 attempts) | Gemma-3-1B (this experiment, n=40) |
+| Metric | Released Gemma-4-E2B v0.1 (14 attempts) | Gemma-3-1B (this experiment, n=100) |
 |---|---:|---:|
-| Round-trip cos | 0.460 ± 0.054 | 0.9712 ± 0.006 |
-| L1 noise gap | +0.195 (v0.2 noise-hinge AR) | +0.0039 |
-| **L2 argmax acc** | **0.100 (chance, every attempt)** | **0.400 (4× chance, p < 10⁻⁶)** |
-| L2 mean margin | −0.149 | +0.0016 |
+| Round-trip cos | 0.460 ± 0.054 | 0.9709 |
+| L1 noise gap | +0.195 (v0.2 noise-hinge AR) | +0.0036 |
+| **L2 argmax acc** | **0.100 (chance, every attempt)** | **0.280 (~2.8× chance; Wilson 95% CI [0.20, 0.38]; p < 4 × 10⁻⁷)** |
+| L2 mean margin | −0.149 | +0.0017 |
 
-The cross-family Gemma-3-1B pair clears L2 = 0.40 against chance = 0.10 with one-tailed Binomial p < 10⁻⁶. **The 4 GB-LoRA-NF4 L2 = chance ceiling characterized across 14 cumulative attempts on Gemma-4-E2B is NOT robust to model family.**
+The cross-family Gemma-3-1B pair clears L2 = 0.28 against chance = 0.10 with Wilson 95% CI excluding chance and one-tailed Binomial p < 4 × 10⁻⁷. **The 4 GB-LoRA-NF4 L2 = chance ceiling characterized across 14 cumulative attempts on Gemma-4-E2B is NOT robust to model family.** Per-seed L2 ranged from 1/10 to 5/10 across the 10 seeds (substantial within-seed variance at n=10 each); the n=100 aggregate is the load-bearing statistic.
 
 **Interpretation.** The most likely explanation, given the controlled recipe + similar proportional layer depth, is that Gemma-3-1B's L17 residual stream encodes per-row content in a form more amenable to the LoRA-NF4 AR's reconstruction than Gemma-4-E2B's L23 residual stream does. Consistent with the polysemanticity-at-scale hypothesis previously documented here — but now with the added wrinkle that the family-level architectural differences between Gemma-3 (text-only, vanilla decoder) and Gemma-4 (multimodal, per-layer input norm + matformer-style multi-resolution attention not present in Gemma-3) also matter, not just scale alone. Round-trip cos = 0.971 and L1 noise gap = +0.004 reflect intrinsic Gemma-3-1B L17 cosine concentration on the unit sphere (the AR is STILL structural-projector-dominant), not improved per-row content fidelity per se. But the within-distribution input-specific signal in the reconstruction is enough to discriminate row identity at 4× chance, which the Gemma-4-E2B AR never achieved.
 
