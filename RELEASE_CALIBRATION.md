@@ -110,6 +110,32 @@ The proposed clean disentangling experiment (cross-model + recipe-controlled tra
 
 Full discussion + per-checkpoint margin/output/entropy/reward tables in source repo: `experiments/v8_nla_local/autoresearch/notes/GRPO_CEILING_FINDING_2026-05-29.md`.
 
+## Addendum 2026-05-30 — Methodology alignment with the open-source kitft reference
+
+A pre-submission audit was performed on 2026-05-30 to verify that the v0.0.1 + v0.1 release attempts every component of the open-source Anthropic NLA recipe (`kitft/natural_language_autoencoders`), to the extent possible on 4 GB consumer hardware. The full audit (with file-path evidence for every component) lives in the source research repo: `experiments/v8_nla_local/autoresearch/notes/METHODOLOGY_ALIGNMENT_AUDIT_2026-05-30.md`. The headline mapping:
+
+| kitft component | Our status | Notes |
+|---|---|---|
+| Stage 0 — activation extraction | implemented | Schema match with `nla/datagen/stage0_extract.py`; L23/35 ≈ 2/3 matches kitft's middle-third heuristic |
+| Stage 1 — doc-level split | implemented | 60/20/20 by hashed `doc_id`; no document-level leakage |
+| Stage 2 — LLM-judge labeling | adapted | Two-pass labeler → auditor with explicit Dr. Chen / Dr. Otsuka persona prompts (kitft ships only the provider interface, not concrete prompts) |
+| Stage 3 — training format + injection convention | implemented | Literal kitft AV/AR templates; `injection_scale = sqrt(d_model) = 39.25` matches kitft's "scaled to embed-token norm" practice |
+| AV SFT | adapted | LoRA r=64 α=128 on NF4 base instead of full FT bf16; trigram-anchored injection hook + response-only loss preserved |
+| AR SFT | adapted | First 18 of 35 layers + `Linear(1536, 1536)` head with `0.1 × torch.eye(D_MODEL)` identity initialization (matches kitft's load-bearing identity-init pattern with a small scaling factor) |
+| Phase 4 GRPO | adapted, run end-to-end | REINFORCE + AR-keepup SFT + KL anchor + entropy bonus, on alternating AV/AR loads at 4 GB; 14 cumulative attempts, all L2 = chance (per the 2026-05-29 addendum above) |
+| Round-trip cosine eval | implemented | 0.438 ± 0.054 (v0.0.1, n=42); 0.460 (v0.1, n=50) |
+| Paraphrase-invariance auxiliary loss | extension (not in kitft) | Released as the AR v0.1 paraphrase-invariance variant |
+| Steganography / claim-ablation eval | partial — per-claim Δmse probe only | kitft does not ship these either; they are paper-§ analyses Anthropic ran but did not open-source |
+| Multi-GPU FSDP / Megatron / SGLang serving | out of scope | Impossible at 4 GB; explicitly skipped |
+
+**Two evals that produce headline numbers in this release are not kitft-shipped metrics.** L1 (gibber vs real activation discrimination; v0.2 = +0.195 gap) and L2 (per-row identity via cross-row argmax; this release = chance) are diagnostics defined in the v8 research effort to characterize the AR's structural-projection failure mode and per-row content reading. They are not in the open-source kitft recipe. The "L2 at chance across 14 attempts" headline is therefore against the v8 internal bar — readers comparing this release to deployed NLAs via L2 should be aware that the L2 metric itself is a v8 construct, not a published kitft benchmark.
+
+**Two deliberate (non-hardware-forced) divergences from kitft:** (1) GRPO reward formulation drift — kitft `configs/rl.sh` ships only `-mse_nrm`, while we tested 5 reward variants (MSE, contrastive_mean, contrastive_max) plus entropy regimes β ∈ {0, 0.1, 0.3, 1.0}, motivated by the structural-projector content-blindness pathology on v0.0.1; (2) brief AR-contrastive loss experiment at GRPO rollouts 108–120 that produced a worse reward and was reverted. Both are documented in `experiments/v8_nla_local/autoresearch/notes/GRPO_CEILING_FINDING_2026-05-29.md`.
+
+**One enhancement flagged for future releases (not present here):** predict-the-mean baseline + FVE-vs-mean training-step logging. kitft logs `train/fve` per step; we report cosine and L2-argmax but no FVE-vs-mean baseline. Not a correctness issue for the current release, but useful instrumentation for future training runs.
+
+**Audit verdict:** the v0.0.1 + v0.1 release is methodologically aligned with the open-source kitft recipe to the extent possible at 4 GB. Every kitft phase has been attempted in good faith; divergences are either hardware-forced, deliberate extensions, or covered by v8-original instrumentation. The release framing in this document, the v0.1.x trajectory README retraction, and the GRPO ceiling finding remain the load-bearing honesty surface; this audit confirms the substrate they sit on.
+
 ## Acknowledgments
 
 Thanks to [Neuronpedia](https://www.neuronpedia.org/) for the public NLA API that made this calibration possible. Thanks to Anthropic / Kit Fraser-Taliente et al. for the open-source [NLA methodology and reference checkpoints](https://transformer-circuits.pub/2026/nla/).
