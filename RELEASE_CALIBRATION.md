@@ -136,6 +136,44 @@ A pre-submission audit was performed on 2026-05-30 to verify that the v0.0.1 + v
 
 **Audit verdict:** the v0.0.1 + v0.1 release is methodologically aligned with the open-source kitft recipe to the extent possible at 4 GB. Every kitft phase has been attempted in good faith; divergences are either hardware-forced, deliberate extensions, or covered by v8-original instrumentation. The release framing in this document, the v0.1.x trajectory README retraction, and the GRPO ceiling finding remain the load-bearing honesty surface; this audit confirms the substrate they sit on.
 
+## Addendum 2026-05-31 — Cross-family L2 test on Gemma-3-1B: ceiling is NOT family-robust
+
+The 2026-05-29 GRPO addendum (above) framed the open question as "whether the bottleneck is the **base model scale** (2B vs 27B/70B) or the **at-4 GB hardware constraint** (LoRA + NF4 + small contrast pool)." We have now run a within-Gemma-3-family scale-controlled test at 4 GB that partially answers this.
+
+**Method.** Trained a fresh NLA pair on **Gemma-3-1B at L17** (proportional layer depth 0.654, matching Anthropic's deployed Gemma-3-27B at L41/62 = 0.661 and our Gemma-4-E2B at L23/35 = 0.657). Identical recipe to the v0.1 Gemma-4-E2B release: LoRA r=64 α=128 on NF4 base, AdamW-8bit lr=1e-4, grad-accum=16, 512 max length, 50 SFT steps each for AV and AR, 0.1 × torch.eye identity-init AR linear head. Hardware: same 4 GB GTX 1650 Ti Max-Q.
+
+The training data is a cross-family JOIN: Gemma-3-1B L17 activations were re-extracted by running forward passes through Gemma-3-1B on the same 800 FineWeb-Edu source-text positions used for v0.2 Gemma-4-E2B's stage0, then joined with v0.2's existing persona+audit labels by (doc_id, n_raw_tokens). Same labels, same source text, fresh activations. The labels are model-agnostic — they describe source-text content at each position, not a property of the captured activation — so reusing them across model families is a controlled comparison.
+
+Note that Gemma-3-4B at the same recipe was tried first and pivoted: Gemma-3-4B NF4 base alone fills 3.23 GB of 4.29 GB total VRAM, leaving 0.18 GB free — insufficient for LoRA + grads + 8-bit AdamW state (~600 MB additional needed). Gemma-3-1B is the largest within-family model that fits the standard recipe at 4 GB.
+
+**Result.** L2 cross-row argmax accuracy on n=40 (4 seeds × n=10 each) on a TRUE held-out subset of 272 source-text positions NOT in either training set:
+
+| Metric | Released Gemma-4-E2B v0.1 (14 attempts) | Gemma-3-1B (this experiment, n=40) |
+|---|---:|---:|
+| Round-trip cos | 0.460 ± 0.054 | 0.9712 ± 0.006 |
+| L1 noise gap | +0.195 (v0.2 noise-hinge AR) | +0.0039 |
+| **L2 argmax acc** | **0.100 (chance, every attempt)** | **0.400 (4× chance, p < 10⁻⁶)** |
+| L2 mean margin | −0.149 | +0.0016 |
+
+The cross-family Gemma-3-1B pair clears L2 = 0.40 against chance = 0.10 with one-tailed Binomial p < 10⁻⁶. **The 4 GB-LoRA-NF4 L2 = chance ceiling characterized across 14 cumulative attempts on Gemma-4-E2B is NOT robust to model family.**
+
+**Interpretation.** The most likely explanation, given the controlled recipe + similar proportional layer depth, is that Gemma-3-1B's L17 residual stream encodes per-row content in a form more amenable to the LoRA-NF4 AR's reconstruction than Gemma-4-E2B's L23 residual stream does. Consistent with the polysemanticity-at-scale hypothesis previously documented here — but now with the added wrinkle that the family-level architectural differences between Gemma-3 (text-only, vanilla decoder) and Gemma-4 (multimodal, per-layer input norm + matformer-style multi-resolution attention not present in Gemma-3) also matter, not just scale alone. Round-trip cos = 0.971 and L1 noise gap = +0.004 reflect intrinsic Gemma-3-1B L17 cosine concentration on the unit sphere (the AR is STILL structural-projector-dominant), not improved per-row content fidelity per se. But the within-distribution input-specific signal in the reconstruction is enough to discriminate row identity at 4× chance, which the Gemma-4-E2B AR never achieved.
+
+**Confounders and limitations of the conclusion.**
+
+1. **Cross-family training data was smaller** (360 AV rows vs released v0.1's 4734; 168 AR rows vs released v0.1's ~1700). However, the v0.1.0 11K-row corpus on Gemma-4-E2B also hit L2 = chance, so corpus scaling is unlikely to be the load-bearing factor.
+2. **Cross-family training was 50 steps**; released v0.1 trained 50–300 steps. The Gemma-4-E2B ceiling held at every step count from 50 to 300, so longer training is unlikely to be the load-bearing factor.
+3. **The labels were written for Gemma-4-E2B's activations at L23**, then reused for Gemma-3-1B at L17. A fresh persona+audit relabeling on Gemma-3-1B activations would isolate this confound.
+4. **Initial eval at seed=0 on the full 800-row replay pool was contaminated** by 4-of-10 overlap with the AV training set (L2 = 4/10 = 0.400, identical to the training-overlap count, consistent with memorization). All reported numbers above use the 272-row true-held-out subtraction; the multi-seed verdict is robust.
+
+**Implications for the released v0.0.1 + v0.1 Gemma-4-E2B pair.**
+
+- The "L2 = chance across 14 attempts" finding documented for Gemma-4-E2B specifically remains correct and is not invalidated by this addendum. The release ceiling characterization stands for Gemma-4-E2B at this hardware scale.
+- The "4 GB-LoRA-NF4 ceiling is robust to model family" framing previously hedged in the 2026-05-29 addendum is now empirically rejected. Model family does matter.
+- The recommended next-step experiment from the 2026-05-29 addendum — cross-model recipe-controlled training on Gemma-3-27B — remains the gold-standard disentangling experiment and is now better-motivated: Gemma-3-1B at 4 GB clears L2; Gemma-3-27B with our recipe (on adequate hardware) would test whether the lift extrapolates linearly with within-family scale, isolating "family vs scale vs hardware" decisively.
+
+Full audit + per-seed eval JSON + training logs + checkpoints in source research repo: `experiments/v8_nla_local/autoresearch/notes/CROSS_FAMILY_GEMMA3_1B_2026-05-30.md`.
+
 ## Acknowledgments
 
 Thanks to [Neuronpedia](https://www.neuronpedia.org/) for the public NLA API that made this calibration possible. Thanks to Anthropic / Kit Fraser-Taliente et al. for the open-source [NLA methodology and reference checkpoints](https://transformer-circuits.pub/2026/nla/).
