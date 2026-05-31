@@ -219,6 +219,18 @@ The previously-skipped Phase 4 of the Anthropic NLA recipe (joint GRPO RL fine-t
 
 Full evidence + per-rollout reward/entropy/loss traces + per-checkpoint cosine matrices:  source research repo `experiments/v8_nla_local/autoresearch/notes/GRPO_CEILING_FINDING_2026-05-29.md` plus the autoresearch loop's 25+ commit lineage on the `autoresearch-scaffolding` branch.
 
+## 2026-05-30 — Methodology-alignment audit (pre-Neuronpedia-submission)
+
+Before submitting the v0.0.1 + v0.1 NLA pair to Neuronpedia as a community contribution, a pre-submission audit was performed to verify the release attempts every component of the open-source Anthropic NLA recipe (`kitft/natural_language_autoencoders`) to the extent possible at 4 GB. The audit walked both repositories (kitft reference at `C:\Users\caleb\nla` and our implementation at `experiments/v8_nla_local/`) file-by-file and produced a 14-component status table.
+
+**Verdict.** Every kitft phase has been attempted in good faith: Stage 0, Stage 1, Stage 2 (with explicit Dr. Chen / Dr. Otsuka persona+audit prompts elaborating the paper's persona-prompt sketch), Stage 3 (with corrected `injection_scale = sqrt(d_model) = 39.25`), AV SFT (LoRA r=64 α=128 on NF4 base), AR SFT (with `0.1 × torch.eye(D_MODEL)` identity-initialized linear head — matches kitft's load-bearing identity-init pattern with a small scaling factor), and Phase 4 GRPO (14 cumulative attempts spanning 5 reward formulations × 4 entropy regimes; all L2 = chance per the 2026-05-25-to-29 entry above). Divergences from kitft are either (a) forced by 4 GB hardware (NF4 + LoRA + single-GPU + alternating AV/AR loads + smaller GRPO batches), (b) deliberate extensions (paraphrase-invariance auxiliary loss in v0.1 AR; persona+audit prompts; contrastive GRPO reward variants motivated by the structural-projector content-blindness pathology), or (c) genuinely absent (steganography eval — kitft does not ship this either, paper-§ analysis only).
+
+**Headline disclosure surfaced by the audit.** Two evals that produce headline numbers in this release — L1 (gibber vs real activation discrimination) and L2 (per-row identity via cross-row argmax) — are v8-defined diagnostics, not kitft-shipped metrics. The "L2 at chance across 14 attempts" headline is therefore against the v8 internal bar, not a published kitft benchmark. This is now documented in `RELEASE_CALIBRATION.md` Addendum 2026-05-30 and was added as a one-line disclosure in the Neuronpedia submission email to johnny@neuronpedia.org.
+
+**One enhancement flagged for future releases.** kitft logs `train/fve` (FVE-vs-predict-the-mean baseline) per training step; we report cosine and L2-argmax but no FVE-vs-mean. Not a correctness issue for the current release; useful instrumentation to add for future training runs.
+
+Full audit with per-component file-path evidence: source research repo `experiments/v8_nla_local/autoresearch/notes/METHODOLOGY_ALIGNMENT_AUDIT_2026-05-30.md`. Public summary: `RELEASE_CALIBRATION.md` Addendum 2026-05-30.
+
 ## Cross-references
 
 - Source research repo: `SolshineCode/deception-nanochat-sae-research` (private; DM for access)
