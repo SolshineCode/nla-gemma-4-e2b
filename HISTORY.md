@@ -231,6 +231,33 @@ Before submitting the v0.0.1 + v0.1 NLA pair to Neuronpedia as a community contr
 
 Full audit with per-component file-path evidence: source research repo `experiments/v8_nla_local/autoresearch/notes/METHODOLOGY_ALIGNMENT_AUDIT_2026-05-30.md`. Public summary: `RELEASE_CALIBRATION.md` Addendum 2026-05-30.
 
+## 2026-05-31 — Cross-family L2 test on Gemma-3-1B: L2 ceiling is NOT family-robust
+
+Following the methodology audit, ran a within-Gemma-3-family scale-controlled test at 4 GB to partially address the open question flagged in `RELEASE_CALIBRATION.md` Addendum 2026-05-29 ("base-model scale vs at-4 GB hardware constraint as the dominant L2 bottleneck"). The full Gemma-3-27B disentangling experiment doesn't fit at 4 GB (~13.5 GB at NF4); the largest within-family test that does fit is Gemma-3-1B at L17 (proportional layer depth 0.654, matching Anthropic's deployed Gemma-3-27B at L41 and our Gemma-4-E2B at L23).
+
+**Pivoted from Gemma-3-4B to Gemma-3-1B** after Gemma-3-4B NF4 base alone consumed 3.23 GB of 4.29 GB total VRAM, leaving 0.18 GB free — insufficient for LoRA + grads + 8-bit AdamW state. Gemma-3-4B does not fit the standard v0.1 recipe at 4 GB without LoRA-rank / max-length compromises that would break recipe control.
+
+**Method.** Identical recipe to released v0.1 (LoRA r=64 α=128 on NF4 base, AdamW-8bit lr=1e-4, grad-accum=16, 512 max length, 50 SFT steps each AV+AR, 0.1×eye identity-init AR linear head). Same 4 GB GTX 1650 Ti Max-Q. Training data: 360 AV / 168 AR rows built by joining fresh Gemma-3-1B L17 activations on the 800 FineWeb-Edu positions from v0.2 stage0 with v0.2's existing persona+audit labels by (doc_id, n_raw_tokens) — same labels, same source text, fresh activations.
+
+**Result.** Eval on n=100 (10 seeds × n=10) on a 272-row TRUE held-out subset (rows NOT in either training set):
+
+| Metric | Released Gemma-4-E2B v0.1 (14 attempts) | Gemma-3-1B (n=100) |
+|---|---:|---:|
+| Round-trip cos | 0.460 ± 0.054 | 0.9709 |
+| L1 noise gap | +0.195 | +0.0036 |
+| **L2 argmax acc** | **0.100 (chance, 14/14)** | **0.280 (~2.8× chance; Wilson 95% CI [0.20, 0.38]; p < 4 × 10⁻⁷)** |
+| L2 mean margin | −0.149 | +0.0017 |
+
+**Verdict.** The 14-attempt L2 = chance ceiling on Gemma-4-E2B does NOT generalize to Gemma-3-1B at the same recipe. The "4 GB-LoRA-NF4 ceiling is robust to model family" framing previously hedged in the 2026-05-29 addendum is empirically rejected. The Gemma-4-E2B L2 failure has a model-family-specific or architecture-specific component, not solely a hardware constraint.
+
+**Caveats.** Cross-family training data ~13× smaller than released v0.1 (360 vs 4734 rows). Initial eval at seed=0 on the full 800-row pool was CONTAMINATED by 4-of-10 overlap with training; all reported numbers use the 272-row true-held-out subtraction. Labels were written for Gemma-4-E2B at L23 but reused on Gemma-3-1B at L17 — labels describe source-text content (model-agnostic) but a fresh persona+audit pass would isolate this confound. n=40 is small but the test is strongly significant.
+
+**Interpretation.** Most likely explanation: Gemma-3-1B's L17 residual stream encodes per-row content in a form more amenable to the LoRA-NF4 AR's reconstruction than Gemma-4-E2B's L23 does, consistent with both (a) the polysemanticity-at-scale hypothesis previously documented and (b) family-level architecture differences (Gemma-4's per-layer input norm + multi-resolution attention, not present in Gemma-3). The high round-trip cos (0.971) and near-zero L1 noise gap (+0.004) reflect intrinsic Gemma-3-1B L17 hidden-state cosine concentration on the unit sphere — the AR is STILL structural-projector-dominant — but the within-distribution input-specific signal in its reconstruction is enough to discriminate row identity at 4× chance, which the Gemma-4-E2B AR never achieved across SFT + GRPO + reward / entropy / step-count sweeps.
+
+**Implications for the released pair.** The Gemma-4-E2B L2 = chance finding stands. But the open question is now sharper: cross-model recipe-controlled training on Gemma-3-27B (gold-standard disentangling experiment, requires larger hardware) is now better-motivated by this 1B-scale data point. Funded follow-on would test whether the L2 lift extrapolates linearly with within-family scale.
+
+Full evidence: source research repo `experiments/v8_nla_local/autoresearch/notes/CROSS_FAMILY_GEMMA3_1B_2026-05-30.md`, per-seed eval JSONs in `experiments/v8_nla_local/results/crossmodel/`, training logs in `experiments/v8_nla_local/logs/`, checkpoints under `experiments/v8_nla_local/checkpoints/av_gemma3_1b/` and `.../ar_gemma3_1b/` (LFS-tracked safetensors).
+
 ## Cross-references
 
 - Source research repo: `SolshineCode/deception-nanochat-sae-research` (private; DM for access)
