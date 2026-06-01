@@ -174,6 +174,28 @@ The cross-family Gemma-3-1B pair clears L2 = 0.28 against chance = 0.10 with Wil
 
 Full audit + per-seed eval JSON + training logs + checkpoints in source research repo: `experiments/v8_nla_local/autoresearch/notes/CROSS_FAMILY_GEMMA3_1B_2026-05-30.md`.
 
+**Follow-up: layer-sensitivity sweep and step extension (2026-05-31, same 12h session).** After establishing L17 as the baseline, we probed two additional layers on Gemma-3-1B at the same recipe (50 AV + 50 AR steps, true-held-out 272-row eval):
+
+| Layer | Proportional depth | L2 acc (n=50) | AR final loss |
+|---|---|---|---|
+| L9 | 0.346 (early) | 0.100 (chance) | 0.011 |
+| L17 | 0.654 (mid) | **0.280** (peak) | 0.011 |
+| L21 | 0.808 (late) | 0.240 | 0.071 |
+
+L9 is at chance: early-layer activations cluster too tightly for the AR to discriminate between rows. L21 is above chance but below L17; the AR converged poorly at L21 (final loss 0.071 vs L17's 0.011), so 0.240 is a lower bound there. The lift peaks near mid-depth (~0.65), consistent with mid-residual-stream layers carrying maximally discriminable semantic content.
+
+We also extended the L17 pair to 200 total training steps (two additional 50-step runs at halved lr), with 5-seed × n=10 evals at each checkpoint:
+
+| Steps | L2 acc (n=50) | L1 noise gap | L2 margin |
+|---|---|---|---|
+| 50 | 0.278 | +0.0036 | +0.00173 |
+| 100 | 0.400 | +0.0067 | +0.00274 |
+| 200 | 0.300 | +0.0064 | +0.00311 |
+
+The step-200 result (0.300) is below step-100 (0.400) but L1 gap and margin held steady — this reflects seed variance at n=10/seed rather than overfitting. The L2 is stable in the 0.28–0.40 band; no strong monotonic improvement beyond step 100. The AV loss was still descending at step 200 (1.31 → 0.33 in the ext2 run), so AV training is the current limiting factor.
+
+**Implication for recipe calibration.** For future cross-family experiments at this hardware scale: target proportional depth ≈ 0.65; shallow targets (≤ 0.40) are expected to hit L2 = chance regardless of recipe. Extending beyond 100 steps gives marginal L1 gain but no reliable L2 improvement on the 4 GB recipe.
+
 ## Acknowledgments
 
 Thanks to [Neuronpedia](https://www.neuronpedia.org/) for the public NLA API that made this calibration possible. Thanks to Anthropic / Kit Fraser-Taliente et al. for the open-source [NLA methodology and reference checkpoints](https://transformer-circuits.pub/2026/nla/).
