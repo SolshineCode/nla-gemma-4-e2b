@@ -16,6 +16,16 @@ is robust and convergent. The one thing that *did* change: the v0.1 AV is genuin
 too strong. But that diversity is decoupled from source content. Diverse is not the
 same as content-specific.
 
+**The most important result is the follow-up.** A ceiling test shows the raw L23
+activation IS strongly content-discriminative (doc-retrieval 0.24 vs 0.077 chance,
+p=0.0006; linear probe 60% on 13-way doc id). So the content is present in the
+activation and the AV throws it away: **the verbalizer is the bottleneck, not the
+activation, and the gap is therefore fixable rather than intrinsic.** A layer sweep
+adds that L23 is not even the best site to read (L17 is more than 2x more
+discriminative). Caveats up front: n=50 (13 docs) for the core eval and n=200 (~50
+docs) for the sweep; the sweep uses last-token retrieval, so L17's lead may partly
+reflect surface structure; all probes are on politically-themed news text.
+
 ## Why this is a new test
 
 The published "content-blind" verdict rested on AV->AR *activation-reconstruction*
@@ -85,6 +95,68 @@ against the surface topic would miss. Three things rule this out as a rescue:
    topic)." It still cannot beat chance.
 3. **Both probes converge with the non-semantic lexical probe.** All three method
    families agree.
+
+## The decisive follow-up: the content IS in the activation (the AV is the bottleneck)
+
+A null on the AV output has two very different explanations: either (A) the L23
+activation encodes doc-discriminative content but the AV fails to surface it, or
+(B) the activation does not encode it and no AV could. We tested this directly with
+a **ceiling experiment**: run the same doc-level retrieval on the RAW L23
+activations, plus a cross-validated linear probe (`eval_activation_ceiling.py`).
+
+| Readout on RAW L23 activation (n=50, 13 docs) | Result | Chance | Signal? |
+|---|---|---|---|
+| Doc-level retrieval top-1 | **0.240** | 0.077 | yes (p=0.0006, z=4.6) |
+| Linear-probe (logistic) CV accuracy | **0.604** | 0.083 | yes |
+
+So the answer is **(A)**. The raw activation is strongly document-discriminative:
+a simple linear probe reads doc identity at 60% (13-way), and nearest-activation
+retrieval runs at 3x chance. The content is right there. The v0.1 AV throws it
+away, landing its TEXT output at chance (0.10, p=0.34). A single forward-injection
+single-token probe behaves the same (shift-vs-baseline 0.28, p=0.36, non-degenerate).
+
+Three consequences:
+1. **The gap is the verbalizer, not an intrinsic ceiling.** The information needed
+   for per-row content fidelity is present in the 2B-L23 activation. Better AV
+   training (more steps, larger corpus, less template collapse) can in principle
+   recover it. This is the fixable, hopeful reading, and it is the measured one.
+2. **It refutes the polysemanticity-at-2B-scale hypothesis for doc-level content.**
+   The prior calibration doc speculated the 2B activation might intrinsically encode
+   less per-instance specificity. For document identity it does not: 60% linear
+   decodability says the specificity is there.
+3. **It validates the eval method.** The same retrieval that finds nothing in the AV
+   output finds a strong signal in the activation, so the AV-output null is a real
+   property of the AV, not a blind spot of the metric.
+
+The likely mechanism is the template collapse already on file (18/50 outputs share
+one prefix): the AV largely ignores the injected activation and emits a learned
+prior, so the rich activation signal never reaches the text.
+
+### Layer sweep: L23 is not even the best layer to read
+
+`eval_layer_ceiling_sweep.py` re-extracts last-token activations at eight layers
+for 200 held-out texts (~50 docs, chance = 0.020) and runs the same doc-level
+retrieval ceiling at each.
+
+| Layer | Doc-retrieval top-1 | z | note |
+|---|---|---|---|
+| L5 | 0.300 | 27 | |
+| L9 | 0.350 | 32 | |
+| L13 | 0.285 | 25 | |
+| **L17** | **0.805** | **73** | most discriminative by far |
+| L21 | 0.405 | 38 | |
+| L23 | 0.350 | 31 | the layer the NLA reads |
+| L27 | 0.530 | 48 | |
+| L31 | 0.515 | 48 | |
+
+Every layer is strongly above chance (all p ~ 0.0005), so doc-discriminative content
+is present throughout the stack. But **L23, the NLA's target, is among the weaker
+layers, and L17 carries more than twice its doc-discriminability** (0.805 vs 0.350).
+Two clean levers for a better NLA follow: (a) fix the AV so it actually reads the L23
+signal that is already there, and (b) consider retargeting to L17, where there is far
+more to read. (The retrieval is over last-token activations, so L17's edge may partly
+reflect richer lexical structure at the middle of the stack; the point that all
+layers are content-rich and L23 is not optimal holds either way.)
 
 ## The one honest scope-limit
 

@@ -230,6 +230,23 @@ eval. Scripts, per-trial data, and the full writeup:
 `experiments/v8_nla_local/CONTENT_SPECIFICITY_EVAL.md` and
 `experiments/v8_nla_local/results/content_aware_eval/content_specificity_*`.
 
+**Decisive follow-up: the content is in the activation; the AV is the bottleneck.**
+A null on the AV output has two readings: the activation lacks the content, or the AV
+fails to surface it. A ceiling test settles it. Running the same doc-level retrieval on
+the RAW L23 activations gives top-1 0.240 vs 0.077 chance (p=0.0006), and a logistic
+probe reads 13-way document identity at 60%. So the activation is strongly
+content-discriminative and the AV discards that signal (consistent with the template
+collapse, where the AV largely ignores the injected activation). Two consequences: the
+per-row gap is **fixable with better AV training, not an intrinsic 2B-L23 ceiling**, and
+this refutes the polysemanticity-at-2B-scale reading above for document-level content.
+
+An 8-layer ceiling sweep (`eval_layer_ceiling_sweep.py`, n=200, chance 0.020) adds that
+every layer is content-rich, L23 (the NLA's site) is middling at 0.350, and L17 is the
+most discriminative at 0.805. A future NLA could improve both by training the AV harder
+and by retargeting toward a more discriminative layer. (Sweep retrieval is last-token, so
+L17's lead may partly reflect middle-layer lexical structure; the point that all layers
+are content-rich and L23 is not optimal holds regardless.)
+
 ## Acknowledgments
 
 Thanks to [Neuronpedia](https://www.neuronpedia.org/) for the public NLA API that made this calibration possible. Thanks to Anthropic / Kit Fraser-Taliente et al. for the open-source [NLA methodology and reference checkpoints](https://transformer-circuits.pub/2026/nla/).

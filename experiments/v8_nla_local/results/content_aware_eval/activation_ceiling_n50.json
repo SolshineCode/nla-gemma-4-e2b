@@ -1,0 +1,19 @@
+{
+ "set_50_13docs": {
+  "retrieval": {
+   "doc_top1": 0.24,
+   "n_docs": 13,
+   "chance_top1": 0.07692307692307693,
+   "null_mean": 0.059039999999999995,
+   "p_value": 0.0005998800239952009,
+   "z": 4.614347455578169
+  },
+  "linear_probe": {
+   "cv_accuracy_mean": 0.6041666666666667,
+   "cv_accuracy_std": 0.03608439182435158,
+   "n_docs_in_probe": 12,
+   "n_samples": 48,
+   "chance": 0.08333333333333333
+  }
+ }
+}
