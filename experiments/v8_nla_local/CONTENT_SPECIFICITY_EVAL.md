@@ -177,6 +177,14 @@ The correction to the published docs is to (a) replace "theme-correct" with that
 precise phrasing, (b) cite this direct retrieval eval as the strongest evidence, and
 (c) keep the genuine nuance that v0.1 output is diverse, just not content-tracking.
 
+But the headline is not just a downgrade. The ceiling test reframes the whole gap as
+**hopeful and fixable**: the content the AV misses is demonstrably present in the L23
+activation (60% linear-probe doc id), so this is a verbalizer-training problem, not a
+model-scale ceiling. The public framing should carry both halves: the v0.1 AV does not
+yet read per-row content, AND the information is there to be read, so a better-trained
+AV (and/or a more discriminative layer like L17) is the clear path to a content-faithful
+NLA at this scale. Floor is real, headroom is real.
+
 ## Reproduce
 
 ```
