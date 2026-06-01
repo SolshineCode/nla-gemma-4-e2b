@@ -1,0 +1,18 @@
+{
+ "config": {
+  "model": "Gemini 3.5 Flash (Antigravity)",
+  "backend": "gemini",
+  "n_choices": 5,
+  "src_chars": 320,
+  "n_trials": 0,
+  "smoke": true,
+  "av_file": "av_outputs_v0_1_dd_n50_from_neuronpedia.json"
+ },
+ "correct": 0,
+ "n": 0,
+ "accuracy": 0.0,
+ "chance": 0.2,
+ "binomial_p_greater_than_chance": 1.0,
+ "verdict": "no signal above chance",
+ "per_trial": []
+}

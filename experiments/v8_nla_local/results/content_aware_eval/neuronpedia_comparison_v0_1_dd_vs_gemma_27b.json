@@ -1,0 +1,261 @@
+{
+  "config": {
+    "av_checkpoint": "experiments\\v8_nla_local\\checkpoints\\av_v0_1_dd_inj39_bf16_long\\step_000250",
+    "base_model": "google/gemma-4-E2B",
+    "neuronpedia_model": "gemma-3-27b-it",
+    "neuronpedia_source": "kitft-l41",
+    "n_rows": 10
+  },
+  "comparison": [
+    {
+      "row_id": 0,
+      "source_text_first200": "Former secretary of state Hillary Clinton meets voters at a campaign rally in St. Louis on Saturday. (Melina Mara/The Washington Post)\n\nDemocratic front-runner Hillary Clinton was ahead by a slim marg",
+      "anthropic_nla_explanation": "News article format: political analysis piece summarizing election implications, establishing factual reporting about Hillary Clinton's primary/caucus momentum.\n\nThe sentence structure \"Democratic nominee must win at least 18 delegates to qualify\u2026 Clinton c\" signals a quoted political analyst or campaign official explaining the mathematical threshold of Democratic victory.\n\nFinal token \"c\" begins a word mid-sentence (\"Clinton c\"), requiring completion of the noun phrase \"campaign\" or \"candidate\" to complete the sentence about Sanders' victory. or \"said\" or \"in the Democratic primaries\". or \"could request a recount\". or \"has the campaign\" or \"in his camp, or his staff\". or \"the.\"",
+      "our_nla_explanation": "The model tracks a list of country-specific statistical weights, where each entry is a high-precision decimal representing a normalized probability distribution.\nThe sequence follows a strict pattern of repeating digits (e.g., 0.02222222222222222222222222222222222222222222222222222222222222222222222222",
+      "anthropic_raw": {
+        "results": [
+          {
+            "token": " c",
+            "token_id": 505,
+            "position": 212,
+            "l2_norm": 38685.28515625,
+            "description": "News article format: political analysis piece summarizing election implications, establishing factual reporting about Hillary Clinton's primary/caucus momentum.\n\nThe sentence structure \"Democratic nominee must win at least 18 delegates to qualify\u2026 Clinton c\" signals a quoted political analyst or campaign official explaining the mathematical threshold of Democratic victory.\n\nFinal token \"c\" begins a word mid-sentence (\"Clinton c\"), requiring completion of the noun phrase \"campaign\" or \"candidate\" to complete the sentence about Sanders' victory. or \"said\" or \"in the Democratic primaries\". or \"could request a recount\". or \"has the campaign\" or \"in his camp, or his staff\". or \"the.\"",
+            "mse": 0.028385838493704796,
+            "cosine_similarity": 0.9858070611953735,
+            "generated": false,
+            "fragment_index": 0,
+            "fragment_count": 1
+          }
+        ],
+        "layer_index": 41,
+        "prompt_length": 213,
+        "cacheId": "cmpbsh6ct004pu3k65csyhkgp"
+      }
+    },
+    {
+      "row_id": 1,
+      "source_text_first200": "Former secretary of state Hillary Clinton meets voters at a campaign rally in St. Louis on Saturday. (Melina Mara/The Washington Post)\n\nDemocratic front-runner Hillary Clinton was ahead by a slim marg",
+      "anthropic_nla_explanation": "Educational/journalistic narrative about political news, establishing a factual analytical summary of Clinton-Trump outcome and ongoing momentum.\n\nThe sentence structure \"Clinton, despite defeat, vowed to continue\u2026 while Sanders continues\u2026\" signals a paired analysis, with a second scenario or evidence of the diminished but defiant Hillary.\n\nFinal sentence closes a summary clause (\"the diminished but determined Hillary Clinton...\"), strongly expecting continuation with a period or continuation like \".\" or \"Clinton\" or \"the battered Clinton\" or \"...\" or \"Clinton and Sanders\" or \"the...\" or \"Regardless, Hillary...\" or \"the Clinton defeated...\" or \" Sanders has...\" or \"her limited victory...\" or \"Clinton's position.\"",
+      "our_nla_explanation": "The model tracks a high-probability semantic cluster of \"political corruption\" and \"corruption of the system,\" maintaining a negative valence throughout the narrative.\nThe model integrates the \"corruption\" theme to predict a noun phrase that completes the \"corruption of the system\" metaphor.\nThe final token \"corruption\" is a head noun in a compound noun phrase, requiring a prepositional phrase (e.g., \"of the system\") to specify the target of the corruption.\n</explanation>",
+      "anthropic_raw": {
+        "results": [
+          {
+            "token": ".",
+            "token_id": 236761,
+            "position": 130,
+            "l2_norm": 34520.0546875,
+            "description": "Educational/journalistic narrative about political news, establishing a factual analytical summary of Clinton-Trump outcome and ongoing momentum.\n\nThe sentence structure \"Clinton, despite defeat, vowed to continue\u2026 while Sanders continues\u2026\" signals a paired analysis, with a second scenario or evidence of the diminished but defiant Hillary.\n\nFinal sentence closes a summary clause (\"the diminished but determined Hillary Clinton...\"), strongly expecting continuation with a period or continuation like \".\" or \"Clinton\" or \"the battered Clinton\" or \"...\" or \"Clinton and Sanders\" or \"the...\" or \"Regardless, Hillary...\" or \"the Clinton defeated...\" or \" Sanders has...\" or \"her limited victory...\" or \"Clinton's position.\"",
+            "mse": 0.030444975942373276,
+            "cosine_similarity": 0.9847774505615234,
+            "generated": false,
+            "fragment_index": 0,
+            "fragment_count": 1
+          }
+        ],
+        "layer_index": 41,
+        "prompt_length": 131,
+        "cacheId": "cmpbshiq20003dee1wofi41vh"
+      }
+    },
+    {
+      "row_id": 2,
+      "source_text_first200": "Former secretary of state Hillary Clinton meets voters at a campaign rally in St. Louis on Saturday. (Melina Mara/The Washington Post)\n\nDemocratic front-runner Hillary Clinton was ahead by a slim marg",
+      "anthropic_nla_explanation": "News article format: political analysis piece summarizing election implications, establishing factual reporting about Hillary Clinton's primary/caucus momentum.\n\nThe sentence structure \"Democratic nominee must win at least 18 delegates to qualify\u2026 Clinton c\" signals a quoted political analyst or campaign official explaining the mathematical threshold of Democratic victory.\n\nFinal token \"c\" begins a word mid-sentence (\"Clinton c\"), requiring completion of the noun phrase \"campaign\" or \"candidate\" to complete the sentence about Sanders' victory. or \"said\" or \"in the Democratic primaries\". or \"could request a recount\". or \"has the campaign\" or \"in his camp, or his staff\". or \"the.\"",
+      "our_nla_explanation": "Thematic consistency: The model maintains the \"non-binary\" identity of the \"Fascist\" to predict a \"non-binary\" or \"non-binary\" role-assignment.\nSyntactic completion: The \"non-binary\" adjective completes the noun phrase \"non-binary role,\" which is the primary target of the \"Fascist\" identity.\nFinal feature: \"non-binary\" is a modifier that requires a following noun phrase to complete the identity of the role being described.\n<unused56>",
+      "anthropic_raw": {
+        "results": [
+          {
+            "token": " c",
+            "token_id": 505,
+            "position": 212,
+            "l2_norm": 38685.28515625,
+            "description": "News article format: political analysis piece summarizing election implications, establishing factual reporting about Hillary Clinton's primary/caucus momentum.\n\nThe sentence structure \"Democratic nominee must win at least 18 delegates to qualify\u2026 Clinton c\" signals a quoted political analyst or campaign official explaining the mathematical threshold of Democratic victory.\n\nFinal token \"c\" begins a word mid-sentence (\"Clinton c\"), requiring completion of the noun phrase \"campaign\" or \"candidate\" to complete the sentence about Sanders' victory. or \"said\" or \"in the Democratic primaries\". or \"could request a recount\". or \"has the campaign\" or \"in his camp, or his staff\". or \"the.\"",
+            "mse": 0.028385838493704796,
+            "cosine_similarity": 0.9858070611953735,
+            "generated": false,
+            "fragment_index": 0,
+            "fragment_count": 1
+          }
+        ],
+        "layer_index": 41,
+        "prompt_length": 213,
+        "cacheId": "cmpbsh6ct004pu3k65csyhkgp"
+      }
+    },
+    {
+      "row_id": 3,
+      "source_text_first200": "Former secretary of state Hillary Clinton meets voters at a campaign rally in St. Louis on Saturday. (Melina Mara/The Washington Post)\n\nDemocratic front-runner Hillary Clinton was ahead by a slim marg",
+      "anthropic_nla_explanation": "News article format: a political campaign story reporting election results, establishing a 2016 tally update for a Democratic candidate.\n\nThe headline \"Clinton's lead narrows, but unlikely to demand...\" signals a political news story about ballot counting controversy, standard in election aftermath scenarios involving contested counts.\n\nFinal token \"seek\" opens a noun phrase listing electoral options/requests (\"whether seek\"), requiring a noun like \"a recount\" or \"a recount\" to complete the political request for a recount or judicial intervention. \"or intervene\" is the expected second option in a dramatic, uncertain scenario. or \"a recount\" or \"to recount.\" or \"a statewide recount.\" or \".\"",
+      "our_nla_explanation": "The model tracks a list of historical events, specifically the \"1918 influenza pandemic\" and its subsequent \"1919\" successor.\nThe model maintains a chronological sequence of global health crises, requiring the next year to complete the \"1919-1920\" timeframe.\nThe final token \"19\" is a numeric prefix; it constrains the next token to the digit \"2\" to complete the year \"1920.\"\n<unused56>",
+      "anthropic_raw": {
+        "results": [
+          {
+            "token": " seek",
+            "token_id": 6370,
+            "position": 68,
+            "l2_norm": 68516.2890625,
+            "description": "News article format: a political campaign story reporting election results, establishing a 2016 tally update for a Democratic candidate.\n\nThe headline \"Clinton's lead narrows, but unlikely to demand...\" signals a political news story about ballot counting controversy, standard in election aftermath scenarios involving contested counts.\n\nFinal token \"seek\" opens a noun phrase listing electoral options/requests (\"whether seek\"), requiring a noun like \"a recount\" or \"a recount\" to complete the political request for a recount or judicial intervention. \"or intervene\" is the expected second option in a dramatic, uncertain scenario. or \"a recount\" or \"to recount.\" or \"a statewide recount.\" or \".\"",
+            "mse": 0.014908308163285255,
+            "cosine_similarity": 0.9925466179847717,
+            "generated": false,
+            "fragment_index": 0,
+            "fragment_count": 1
+          }
+        ],
+        "layer_index": 41,
+        "prompt_length": 69,
+        "cacheId": "cmpbshtpj0007dee1p7c03c40"
+      }
+    },
+    {
+      "row_id": 4,
+      "source_text_first200": "The opinions expressed by columnists are their own and do not represent the views of Townhall.com.\n\nYou have to give President Barack Obama credit for one thing: consistency. Nothing is ever his fault",
+      "anthropic_nla_explanation": "Political analysis/argumentative article format: a quoted excerpt from conservative commentators like Obama and the Congressional Republicans, explaining Obamacare's failures.\n\nThe phrase \"He calls the bill 'socialist' and a disaster to the A\" establishes a list of examples of the Obamacare insult, emphasizing the Republican's anger at the term \"American people.\"\n\nFinal token \"of the A\" begins a noun phrase (\"in the agony of the A\"), requiring a noun like \"American people\" or \"American\" to complete the quoted phrase about the American public or nation. or \"American people\" or \"American, and the American.\" or \"American,\" or \"American public.\" or \"American.\"",
+      "our_nla_explanation": "The model tracks a list of country-specific statistical data, maintaining a high-precision numeric register (e.g., 16 decimal places) to reflect the precision of the underlying survey data.\nThe model integrates the \"United States\" context to predict a high-probability continuation of the \"16\" digit sequence to complete the 16-digit numeric value.\nThe final token \"16\" is a truncated numeric prefix; it constrains the next tokens to the digits \"0\" and \"0\" to satisfy the established precision of the preceding values.",
+      "anthropic_raw": {
+        "results": [
+          {
+            "token": " A",
+            "token_id": 562,
+            "position": 221,
+            "l2_norm": 35388.61328125,
+            "description": "Political analysis/argumentative article format: a quoted excerpt from conservative commentators like Obama and the Congressional Republicans, explaining Obamacare's failures.\n\nThe phrase \"He calls the bill 'socialist' and a disaster to the A\" establishes a list of examples of the Obamacare insult, emphasizing the Republican's anger at the term \"American people.\"\n\nFinal token \"of the A\" begins a noun phrase (\"in the agony of the A\"), requiring a noun like \"American people\" or \"American\" to complete the quoted phrase about the American public or nation. or \"American people\" or \"American, and the American.\" or \"American,\" or \"American public.\" or \"American.\"",
+            "mse": 0.0249479953199625,
+            "cosine_similarity": 0.9875261187553406,
+            "generated": false,
+            "fragment_index": 0,
+            "fragment_count": 1
+          }
+        ],
+        "layer_index": 41,
+        "prompt_length": 222,
+        "cacheId": "cmpbsi4yx005pu3k62ij1lfyt"
+      }
+    },
+    {
+      "row_id": 5,
+      "source_text_first200": "The opinions expressed by columnists are their own and do not represent the views of Townhall.com.\n\nYou have to give President Barack Obama credit for one thing: consistency. Nothing is ever his fault",
+      "anthropic_nla_explanation": "Political analysis/argumentative article format: a quoted excerpt from conservative commentators like Obama and the Congressional Republicans, explaining Obamacare's failures.\n\nThe phrase \"He calls the bill 'socialist' and a disaster to the A\" establishes a list of examples of the Obamacare insult, emphasizing the Republican's anger at the term \"American people.\"\n\nFinal token \"of the A\" begins a noun phrase (\"in the agony of the A\"), requiring a noun like \"American people\" or \"American\" to complete the quoted phrase about the American public or nation. or \"American people\" or \"American, and the American.\" or \"American,\" or \"American public.\" or \"American.\"",
+      "our_nla_explanation": "Thematic consistency: The model maintains the \"anti-fascist\" stance established in the prompt, prioritizing vocabulary that reinforces the \"no hate\" and \"respectful\" values of the prompt.\nSemantic field activation: The \"hate\" and \"discrimination\" context primes a list of prohibited behaviors, such as \"discrimination,\" \"hate,\" \"discrimination,\" or \"discrimination.\"\nFinal feature: The noun \"hate\" functions as a semantic head, requiring a prepositional phrase (e.g., \"of\") or a coordinating conjunction to complete the phrase \"hate speech.\"\n</explanation>",
+      "anthropic_raw": {
+        "results": [
+          {
+            "token": " A",
+            "token_id": 562,
+            "position": 221,
+            "l2_norm": 35388.61328125,
+            "description": "Political analysis/argumentative article format: a quoted excerpt from conservative commentators like Obama and the Congressional Republicans, explaining Obamacare's failures.\n\nThe phrase \"He calls the bill 'socialist' and a disaster to the A\" establishes a list of examples of the Obamacare insult, emphasizing the Republican's anger at the term \"American people.\"\n\nFinal token \"of the A\" begins a noun phrase (\"in the agony of the A\"), requiring a noun like \"American people\" or \"American\" to complete the quoted phrase about the American public or nation. or \"American people\" or \"American, and the American.\" or \"American,\" or \"American public.\" or \"American.\"",
+            "mse": 0.0249479953199625,
+            "cosine_similarity": 0.9875261187553406,
+            "generated": false,
+            "fragment_index": 0,
+            "fragment_count": 1
+          }
+        ],
+        "layer_index": 41,
+        "prompt_length": 222,
+        "cacheId": "cmpbsi4yx005pu3k62ij1lfyt"
+      }
+    },
+    {
+      "row_id": 6,
+      "source_text_first200": "The opinions expressed by columnists are their own and do not represent the views of Townhall.com.\n\nYou have to give President Barack Obama credit for one thing: consistency. Nothing is ever his fault",
+      "anthropic_nla_explanation": "Political analysis/argumentative article format: a quoted excerpt from conservative commentators like Obama and the Congressional Republicans, explaining Obamacare's failures.\n\nThe phrase \"He calls the bill 'socialist' and a disaster to the A\" establishes a list of examples of the Obamacare insult, emphasizing the Republican's anger at the term \"American people.\"\n\nFinal token \"of the A\" begins a noun phrase (\"in the agony of the A\"), requiring a noun like \"American people\" or \"American\" to complete the quoted phrase about the American public or nation. or \"American people\" or \"American, and the American.\" or \"American,\" or \"American public.\" or \"American.\"",
+      "our_nla_explanation": "The model tracks a list of prohibited actions, specifically targeting \"illegal activities\" and \"criminal behavior\" to maintain a high-stakes, safety-aligned register.\nThe model integrates a \"criminal activity\" schema, predicting a noun phrase that completes the \"illegal activities\" list.\nThe final token \"activities\" is a plural noun within a list; it constrains the next token to a comma or a coordinating conjunction (e.g., \"and\") to extend the list.\n</explanation>",
+      "anthropic_raw": {
+        "results": [
+          {
+            "token": " A",
+            "token_id": 562,
+            "position": 221,
+            "l2_norm": 35388.61328125,
+            "description": "Political analysis/argumentative article format: a quoted excerpt from conservative commentators like Obama and the Congressional Republicans, explaining Obamacare's failures.\n\nThe phrase \"He calls the bill 'socialist' and a disaster to the A\" establishes a list of examples of the Obamacare insult, emphasizing the Republican's anger at the term \"American people.\"\n\nFinal token \"of the A\" begins a noun phrase (\"in the agony of the A\"), requiring a noun like \"American people\" or \"American\" to complete the quoted phrase about the American public or nation. or \"American people\" or \"American, and the American.\" or \"American,\" or \"American public.\" or \"American.\"",
+            "mse": 0.0249479953199625,
+            "cosine_similarity": 0.9875261187553406,
+            "generated": false,
+            "fragment_index": 0,
+            "fragment_count": 1
+          }
+        ],
+        "layer_index": 41,
+        "prompt_length": 222,
+        "cacheId": "cmpbsi4yx005pu3k62ij1lfyt"
+      }
+    },
+    {
+      "row_id": 7,
+      "source_text_first200": "The opinions expressed by columnists are their own and do not represent the views of Townhall.com.\n\nYou have to give President Barack Obama credit for one thing: consistency. Nothing is ever his fault",
+      "anthropic_nla_explanation": "Political analysis/argumentative article format: a quoted excerpt from conservative commentators like Obama and the Congressional Republicans, explaining Obamacare's failures.\n\nThe phrase \"He calls the bill 'socialist' and a disaster to the A\" establishes a list of examples of the Obamacare insult, emphasizing the Republican's anger at the term \"American people.\"\n\nFinal token \"of the A\" begins a noun phrase (\"in the agony of the A\"), requiring a noun like \"American people\" or \"American\" to complete the quoted phrase about the American public or nation. or \"American people\" or \"American, and the American.\" or \"American,\" or \"American public.\" or \"American.\"",
+      "our_nla_explanation": "The model tracks a list of country names and their corresponding probability mass, maintaining a high-precision numeric distribution for each entry.\nThe sequence follows a strict 16-digit decimal pattern, where each float represents a rational fraction of a total sum (e.g., 0.012207317073170731).\nThe final token `0.012207317073170731` is a truncated fractional component; it requires additional digits to complete the 16",
+      "anthropic_raw": {
+        "results": [
+          {
+            "token": " A",
+            "token_id": 562,
+            "position": 221,
+            "l2_norm": 35388.61328125,
+            "description": "Political analysis/argumentative article format: a quoted excerpt from conservative commentators like Obama and the Congressional Republicans, explaining Obamacare's failures.\n\nThe phrase \"He calls the bill 'socialist' and a disaster to the A\" establishes a list of examples of the Obamacare insult, emphasizing the Republican's anger at the term \"American people.\"\n\nFinal token \"of the A\" begins a noun phrase (\"in the agony of the A\"), requiring a noun like \"American people\" or \"American\" to complete the quoted phrase about the American public or nation. or \"American people\" or \"American, and the American.\" or \"American,\" or \"American public.\" or \"American.\"",
+            "mse": 0.0249479953199625,
+            "cosine_similarity": 0.9875261187553406,
+            "generated": false,
+            "fragment_index": 0,
+            "fragment_count": 1
+          }
+        ],
+        "layer_index": 41,
+        "prompt_length": 222,
+        "cacheId": "cmpbsi4yx005pu3k62ij1lfyt"
+      }
+    },
+    {
+      "row_id": 8,
+      "source_text_first200": "Stanley \u201cBoom\u201d Williams decided to enter the 2017 NFL Draft after a productive three year career at Kentucky. Williams rushed for 1,170-yards and seven touchdowns in the 2016 season. He boasted an imp",
+      "anthropic_nla_explanation": "Article/analysis format established: a summary/discussion question about a football player's falling career, likely a sports article.\n\nThe passage introduces a contrasting scenario (\"He had signed a contract... but is now cut\") implying a summary or question about the two paragraphs.\n\nFinal token \"\n\n\" closes a quoted news excerpt (\"...\n\n\"), signaling the next sentence likely begins a question or analysis prompt, possibly \"2.\" or \"the article\" or \"the passage\" to summarize the contrasting news story about a failed college football career. or \"This passage\" or \"...\" or \"the article above\" or \"Source: ESPN.\" or \"the second paragraph\" or \"This excerpt.\"",
+      "our_nla_explanation": "The model tracks the \"unnatural\" or \"unnatural\" semantic field, which is a recurring theme in the context of \"unnatural selection\" and \"unnatural selection.\"\nThe model maintains the \"unnatural\" semantic field to predict a noun phrase that completes the phrase \"unnatural selection.\"\nThe final token \"unnatural\" is a modifier within a noun phrase, requiring a head noun like \"selection\" or \"selection\" to complete the phrase.\n</explanation>",
+      "anthropic_raw": {
+        "results": [
+          {
+            "token": "\n\n",
+            "token_id": 108,
+            "position": 101,
+            "l2_norm": 36354.30859375,
+            "description": "Article/analysis format established: a summary/discussion question about a football player's falling career, likely a sports article.\n\nThe passage introduces a contrasting scenario (\"He had signed a contract... but is now cut\") implying a summary or question about the two paragraphs.\n\nFinal token \"\n\n\" closes a quoted news excerpt (\"...\n\n\"), signaling the next sentence likely begins a question or analysis prompt, possibly \"2.\" or \"the article\" or \"the passage\" to summarize the contrasting news story about a failed college football career. or \"This passage\" or \"...\" or \"the article above\" or \"Source: ESPN.\" or \"the second paragraph\" or \"This excerpt.\"",
+            "mse": 0.024907728657126427,
+            "cosine_similarity": 0.9875455498695374,
+            "generated": false,
+            "fragment_index": 0,
+            "fragment_count": 1
+          }
+        ],
+        "layer_index": 41,
+        "prompt_length": 102,
+        "cacheId": "cmpbsim0w007lu3k6ei1j5gik"
+      }
+    },
+    {
+      "row_id": 9,
+      "source_text_first200": "Stanley \u201cBoom\u201d Williams decided to enter the 2017 NFL Draft after a productive three year career at Kentucky. Williams rushed for 1,170-yards and seven touchdowns in the 2016 season. He boasted an imp",
+      "anthropic_nla_explanation": "Educational article structure: a formal academic/legal summary format, establishing statistics about college performance and rankings.\n\nThe sentence beginning \"Kentucky averaged 5.8 yards per carry, 131 rushing yards...\" signals a list of NCAA running statistics, establishing a specific example of high-performing, high-average runners at Kentucky.\n\nFinal token \"6.\" opens a numeric statistic (\"6-yard average per carry... 6.\"), immediately requiring a numeric value like \"6.2\" or \"6.4 yards/carry\" to specify the average yardage metric. or \"7.4 yards per carry\" or \"86 per carry\" or \"the explosive carry\" or.\"",
+      "our_nla_explanation": "The model tracks a list of country-specific statistical weights, where each entry is a high-precision decimal representing a normalized probability distribution.\nThe sequence follows a strict pattern of repeating digits (e.g., 0.02... for 2/99), indicating the model is processing the final elements of a normalized probability vector.\nThe final token `0.02` is a truncated fractional component; it requires additional digits to complete the 1/99 denominator before the list can be closed.\n<unused56>",
+      "anthropic_raw": {
+        "results": [
+          {
+            "token": ".",
+            "token_id": 236761,
+            "position": 58,
+            "l2_norm": 50024.1484375,
+            "description": "Educational article structure: a formal academic/legal summary format, establishing statistics about college performance and rankings.\n\nThe sentence beginning \"Kentucky averaged 5.8 yards per carry, 131 rushing yards...\" signals a list of NCAA running statistics, establishing a specific example of high-performing, high-average runners at Kentucky.\n\nFinal token \"6.\" opens a numeric statistic (\"6-yard average per carry... 6.\"), immediately requiring a numeric value like \"6.2\" or \"6.4 yards/carry\" to specify the average yardage metric. or \"7.4 yards per carry\" or \"86 per carry\" or \"the explosive carry\" or.\"",
+            "mse": 0.052294839173555374,
+            "cosine_similarity": 0.9738529324531555,
+            "generated": false,
+            "fragment_index": 0,
+            "fragment_count": 1
+          }
+        ],
+        "layer_index": 41,
+        "prompt_length": 59,
+        "cacheId": "cmpbsiw1i008lu3k66d15m1aq"
+      }
+    }
+  ]
+}

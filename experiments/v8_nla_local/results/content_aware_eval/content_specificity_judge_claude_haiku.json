@@ -1,0 +1,318 @@
+{
+ "config": {
+  "model": "claude-haiku-4-5-20251001",
+  "n_choices": 5,
+  "src_chars": 320,
+  "n_trials": 50,
+  "smoke": false,
+  "av_file": "av_outputs_v0_1_dd_n50_from_neuronpedia.json"
+ },
+ "correct": 12,
+ "n": 50,
+ "accuracy": 0.24,
+ "chance": 0.2,
+ "binomial_p_greater_than_chance": 0.2893323950118305,
+ "verdict": "no signal above chance",
+ "per_trial": [
+  {
+   "trial_id": 0,
+   "choice": 2,
+   "true_pos": 2,
+   "correct": true
+  },
+  {
+   "trial_id": 1,
+   "choice": 5,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 2,
+   "choice": 4,
+   "true_pos": 3,
+   "correct": false
+  },
+  {
+   "trial_id": 3,
+   "choice": 5,
+   "true_pos": 4,
+   "correct": false
+  },
+  {
+   "trial_id": 4,
+   "choice": 3,
+   "true_pos": 3,
+   "correct": true
+  },
+  {
+   "trial_id": 5,
+   "choice": 4,
+   "true_pos": 2,
+   "correct": false
+  },
+  {
+   "trial_id": 6,
+   "choice": 1,
+   "true_pos": 4,
+   "correct": false
+  },
+  {
+   "trial_id": 7,
+   "choice": 3,
+   "true_pos": 4,
+   "correct": false
+  },
+  {
+   "trial_id": 8,
+   "choice": 5,
+   "true_pos": 4,
+   "correct": false
+  },
+  {
+   "trial_id": 9,
+   "choice": 2,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 10,
+   "choice": 4,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 11,
+   "choice": 3,
+   "true_pos": 5,
+   "correct": false
+  },
+  {
+   "trial_id": 12,
+   "choice": 5,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 13,
+   "choice": 3,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 14,
+   "choice": 3,
+   "true_pos": 5,
+   "correct": false
+  },
+  {
+   "trial_id": 15,
+   "choice": 1,
+   "true_pos": 1,
+   "correct": true
+  },
+  {
+   "trial_id": 16,
+   "choice": 4,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 17,
+   "choice": 1,
+   "true_pos": 4,
+   "correct": false
+  },
+  {
+   "trial_id": 18,
+   "choice": 2,
+   "true_pos": 3,
+   "correct": false
+  },
+  {
+   "trial_id": 19,
+   "choice": 3,
+   "true_pos": 3,
+   "correct": true
+  },
+  {
+   "trial_id": 20,
+   "choice": 3,
+   "true_pos": 3,
+   "correct": true
+  },
+  {
+   "trial_id": 21,
+   "choice": 5,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 22,
+   "choice": 1,
+   "true_pos": 1,
+   "correct": true
+  },
+  {
+   "trial_id": 23,
+   "choice": 4,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 24,
+   "choice": 3,
+   "true_pos": 3,
+   "correct": true
+  },
+  {
+   "trial_id": 25,
+   "choice": 1,
+   "true_pos": 3,
+   "correct": false
+  },
+  {
+   "trial_id": 26,
+   "choice": 5,
+   "true_pos": 2,
+   "correct": false
+  },
+  {
+   "trial_id": 27,
+   "choice": 3,
+   "true_pos": 4,
+   "correct": false
+  },
+  {
+   "trial_id": 28,
+   "choice": 4,
+   "true_pos": 4,
+   "correct": true
+  },
+  {
+   "trial_id": 29,
+   "choice": 1,
+   "true_pos": 3,
+   "correct": false
+  },
+  {
+   "trial_id": 30,
+   "choice": 5,
+   "true_pos": 3,
+   "correct": false
+  },
+  {
+   "trial_id": 31,
+   "choice": 1,
+   "true_pos": 3,
+   "correct": false
+  },
+  {
+   "trial_id": 32,
+   "choice": 3,
+   "true_pos": 4,
+   "correct": false
+  },
+  {
+   "trial_id": 33,
+   "choice": 5,
+   "true_pos": 2,
+   "correct": false
+  },
+  {
+   "trial_id": 34,
+   "choice": 3,
+   "true_pos": 3,
+   "correct": true
+  },
+  {
+   "trial_id": 35,
+   "choice": 3,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 36,
+   "choice": 4,
+   "true_pos": 3,
+   "correct": false
+  },
+  {
+   "trial_id": 37,
+   "choice": 1,
+   "true_pos": 2,
+   "correct": false
+  },
+  {
+   "trial_id": 38,
+   "choice": 4,
+   "true_pos": 4,
+   "correct": true
+  },
+  {
+   "trial_id": 39,
+   "choice": 1,
+   "true_pos": 4,
+   "correct": false
+  },
+  {
+   "trial_id": 40,
+   "choice": 3,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 41,
+   "choice": 1,
+   "true_pos": 5,
+   "correct": false
+  },
+  {
+   "trial_id": 42,
+   "choice": 4,
+   "true_pos": 5,
+   "correct": false
+  },
+  {
+   "trial_id": 43,
+   "choice": 2,
+   "true_pos": 2,
+   "correct": true
+  },
+  {
+   "trial_id": 44,
+   "choice": 3,
+   "true_pos": 5,
+   "correct": false
+  },
+  {
+   "trial_id": 45,
+   "choice": 2,
+   "true_pos": 5,
+   "correct": false
+  },
+  {
+   "trial_id": 46,
+   "choice": 2,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 47,
+   "choice": 1,
+   "true_pos": 1,
+   "correct": true
+  },
+  {
+   "trial_id": 48,
+   "choice": 4,
+   "true_pos": 3,
+   "correct": false
+  },
+  {
+   "trial_id": 49,
+   "choice": 2,
+   "true_pos": 3,
+   "correct": false
+  }
+ ]
+}

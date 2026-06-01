@@ -196,6 +196,40 @@ The step-200 result (0.300) is below step-100 (0.400) but L1 gap and margin held
 
 **Implication for recipe calibration.** For future cross-family experiments at this hardware scale: target proportional depth ≈ 0.65; shallow targets (≤ 0.40) are expected to hit L2 = chance regardless of recipe. Extending beyond 100 steps gives marginal L1 gain but no reliable L2 improvement on the 4 GB recipe.
 
+## Addendum 2026-06-01 — Direct content-specificity retrieval eval: v0.1 AV is at chance
+
+The earlier "content-blind / template-clustered" reading rested on (a) eyeballed
+head-to-head preference judgments and (b) AV→AR activation-reconstruction
+discriminability (cross-row argmax 2/50). Neither directly tests whether the AV **text**
+carries source-content signal. This addendum reports that direct test, prompted by the
+fair challenge that the AV might map an activation to a real but non-topical feature
+(a person's personality, the event, tone) that surface-topic matching would miss.
+
+**Method.** For the 50 v0.1 AV outputs (13 source documents), measure whether each AV
+output recovers its own source document above chance, via doc-level retrieval (chance =
+1/13 = 0.077) with a 5,000-iteration permutation null, plus 5-way LLM-judge forced
+choice (chance = 0.20). Probes: TF-IDF (word + char), semantic embeddings
+(all-MiniLM-L6-v2), local-window and non-template-subset variants, and LLM judges
+(Claude Haiku 4.5, Claude Sonnet 4.6). The judge prompt explicitly allows matching on
+"any genuine connection: topic, named entities, the event itself, a person's personality
+or role, tone, register."
+
+**Result.** All probes at chance. Doc-level top-1 0.08 to 0.10 (vs 0.077); same-doc vs
+different-doc similarity gap non-significant everywhere (permutation p 0.24 to 0.84);
+judge accuracy 0.24 (Haiku, n=50) and 0.267 (Sonnet, n=30) vs 0.20 chance, both
+non-significant. The semantic embedding probe rules out the "real but non-topical
+feature" rescue, since it is feature-agnostic and would still place a genuine
+personality/event/tone feature nearer its own document.
+
+**Refinement to the framing.** The v0.1 AV output is genuinely **diverse** (45/50 unique
+exact strings), so "template-clustered" is too strong as a blanket label (though 18/50 do
+share one prefix). But that diversity is **decoupled from source content**: the output is
+format/genre-plausible, not per-row content- or theme-discriminative. The one honest
+scope-limit: a feature constant across all 13 news documents would be invisible to this
+eval. Scripts, per-trial data, and the full writeup:
+`experiments/v8_nla_local/CONTENT_SPECIFICITY_EVAL.md` and
+`experiments/v8_nla_local/results/content_aware_eval/content_specificity_*`.
+
 ## Acknowledgments
 
 Thanks to [Neuronpedia](https://www.neuronpedia.org/) for the public NLA API that made this calibration possible. Thanks to Anthropic / Kit Fraser-Taliente et al. for the open-source [NLA methodology and reference checkpoints](https://transformer-circuits.pub/2026/nla/).

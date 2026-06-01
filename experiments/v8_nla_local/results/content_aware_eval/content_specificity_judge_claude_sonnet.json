@@ -1,0 +1,197 @@
+{
+ "config": {
+  "model": "claude-sonnet-4-6",
+  "backend": "claude",
+  "n_choices": 5,
+  "n_trials": 30,
+  "note": "partial: 3/5 batches; run crashed on a 300s claude -p timeout on batch 4"
+ },
+ "correct": 8,
+ "n": 30,
+ "accuracy": 0.26666666666666666,
+ "chance": 0.2,
+ "binomial_p_greater_than_chance": 0.23920938130104388,
+ "verdict": "no signal above chance",
+ "per_trial": [
+  {
+   "trial_id": 0,
+   "choice": 2,
+   "true_pos": 2,
+   "correct": true
+  },
+  {
+   "trial_id": 1,
+   "choice": 5,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 2,
+   "choice": 4,
+   "true_pos": 3,
+   "correct": false
+  },
+  {
+   "trial_id": 3,
+   "choice": 4,
+   "true_pos": 4,
+   "correct": true
+  },
+  {
+   "trial_id": 4,
+   "choice": 1,
+   "true_pos": 3,
+   "correct": false
+  },
+  {
+   "trial_id": 5,
+   "choice": 4,
+   "true_pos": 2,
+   "correct": false
+  },
+  {
+   "trial_id": 6,
+   "choice": 3,
+   "true_pos": 4,
+   "correct": false
+  },
+  {
+   "trial_id": 7,
+   "choice": 5,
+   "true_pos": 4,
+   "correct": false
+  },
+  {
+   "trial_id": 8,
+   "choice": 2,
+   "true_pos": 4,
+   "correct": false
+  },
+  {
+   "trial_id": 9,
+   "choice": 4,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 10,
+   "choice": 2,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 11,
+   "choice": 3,
+   "true_pos": 5,
+   "correct": false
+  },
+  {
+   "trial_id": 12,
+   "choice": 5,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 13,
+   "choice": 3,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 14,
+   "choice": 3,
+   "true_pos": 5,
+   "correct": false
+  },
+  {
+   "trial_id": 15,
+   "choice": 4,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 16,
+   "choice": 4,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 17,
+   "choice": 5,
+   "true_pos": 4,
+   "correct": false
+  },
+  {
+   "trial_id": 18,
+   "choice": 1,
+   "true_pos": 3,
+   "correct": false
+  },
+  {
+   "trial_id": 19,
+   "choice": 3,
+   "true_pos": 3,
+   "correct": true
+  },
+  {
+   "trial_id": 20,
+   "choice": 3,
+   "true_pos": 3,
+   "correct": true
+  },
+  {
+   "trial_id": 21,
+   "choice": 5,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 22,
+   "choice": 2,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 23,
+   "choice": 4,
+   "true_pos": 1,
+   "correct": false
+  },
+  {
+   "trial_id": 24,
+   "choice": 3,
+   "true_pos": 3,
+   "correct": true
+  },
+  {
+   "trial_id": 25,
+   "choice": 3,
+   "true_pos": 3,
+   "correct": true
+  },
+  {
+   "trial_id": 26,
+   "choice": 2,
+   "true_pos": 2,
+   "correct": true
+  },
+  {
+   "trial_id": 27,
+   "choice": 2,
+   "true_pos": 4,
+   "correct": false
+  },
+  {
+   "trial_id": 28,
+   "choice": 4,
+   "true_pos": 4,
+   "correct": true
+  },
+  {
+   "trial_id": 29,
+   "choice": 4,
+   "true_pos": 3,
+   "correct": false
+  }
+ ]
+}
