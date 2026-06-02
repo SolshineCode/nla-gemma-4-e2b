@@ -1,0 +1,1286 @@
+{
+ "config": {
+  "av": "C:\\Users\\caleb\\deception-nanochat-sae-research\\experiments\\v8_nla_local\\checkpoints\\av_v0_1_dd_inj39_bf16_long\\step_000250",
+  "n": 50,
+  "k_choices": 4,
+  "chance": 0.25,
+  "metric": "length-normalized continuation logprob; shift = inject - mean-baseline"
+ },
+ "simple_inject": {
+  "correct": 13,
+  "acc": 0.26,
+  "binom_p": 0.4890138263271131
+ },
+ "shift_vs_baseline": {
+  "correct": 14,
+  "acc": 0.28,
+  "binom_p": 0.36296333549553494
+ },
+ "degeneracy_check": {
+  "pred_simple_position_dist": {
+   "2": 15,
+   "0": 14,
+   "3": 11,
+   "1": 10
+  },
+  "pred_shift_position_dist": {
+   "2": 12,
+   "0": 20,
+   "1": 9,
+   "3": 9
+  }
+ },
+ "verdict_shift": "no signal above chance",
+ "per_row": [
+  {
+   "row": 0,
+   "doc": "doc_00000001",
+   "true_pos": 2,
+   "pred_simple": 2,
+   "pred_shift": 2,
+   "lp_inj": [
+    -6.207288980484009,
+    -5.701515376567841,
+    -3.9708395427660435,
+    -5.359251409769058
+   ],
+   "shift": [
+    -0.3711841106414795,
+    -0.40040135383605957,
+    -0.02467974496757952,
+    -0.24136199553807547
+   ],
+   "candidates": [
+    "the Uber app in Dubai",
+    "a political opinion column",
+    "Hillary Clinton's campaign",
+    "airstrikes on ISIS in Syria"
+   ]
+  },
+  {
+   "row": 1,
+   "doc": "doc_00000001",
+   "true_pos": 2,
+   "pred_simple": 2,
+   "pred_shift": 0,
+   "lp_inj": [
+    -5.547283947467804,
+    -6.113833382725716,
+    -4.065275816528446,
+    -9.540104627609253
+   ],
+   "shift": [
+    0.04237931966781616,
+    -0.5799944251775742,
+    -0.11911601872998245,
+    -0.9084627628326416
+   ],
+   "candidates": [
+    "space exploration",
+    "a casino blackjack game",
+    "Hillary Clinton's campaign",
+    "President Obama"
+   ]
+  },
+  {
+   "row": 2,
+   "doc": "doc_00000001",
+   "true_pos": 0,
+   "pred_simple": 0,
+   "pred_shift": 0,
+   "lp_inj": [
+    -3.847537968904362,
+    -7.317746520042419,
+    -5.236925919850667,
+    -7.427251100540161
+   ],
+   "shift": [
+    0.09862182889410187,
+    -0.3080852746963503,
+    -0.11903650561968426,
+    -0.0008315563201906073
+   ],
+   "candidates": [
+    "Hillary Clinton's campaign",
+    "the Evil Dead horror game",
+    "airstrikes on ISIS in Syria",
+    "luxury cars in rap music"
+   ]
+  },
+  {
+   "row": 3,
+   "doc": "doc_00000001",
+   "true_pos": 2,
+   "pred_simple": 2,
+   "pred_shift": 1,
+   "lp_inj": [
+    -5.861155867576599,
+    -6.56595852971077,
+    -3.9306387363380053,
+    -8.054867267608643
+   ],
+   "shift": [
+    -0.025050997734069824,
+    0.17155185341835022,
+    0.015521061460458618,
+    -0.12979638576507568
+   ],
+   "candidates": [
+    "the Uber app in Dubai",
+    "the Snowden surveillance leaks",
+    "Hillary Clinton's campaign",
+    "NFL football"
+   ]
+  },
+  {
+   "row": 4,
+   "doc": "doc_00000002",
+   "true_pos": 0,
+   "pred_simple": 3,
+   "pred_shift": 2,
+   "lp_inj": [
+    -5.519062876701355,
+    -8.435696721076965,
+    -6.393189191818237,
+    -3.900134073783556
+   ],
+   "shift": [
+    -0.21794885396957397,
+    0.195945143699646,
+    0.34432119131088257,
+    0.04602572401490779
+   ],
+   "candidates": [
+    "a political opinion column",
+    "President Obama",
+    "the Snowden surveillance leaks",
+    "Hillary Clinton's campaign"
+   ]
+  },
+  {
+   "row": 5,
+   "doc": "doc_00000002",
+   "true_pos": 1,
+   "pred_simple": 1,
+   "pred_shift": 0,
+   "lp_inj": [
+    -5.523764157295227,
+    -5.245677947998047,
+    -5.4565746784210205,
+    -7.958210309346517
+   ],
+   "shift": [
+    0.3856756828725336,
+    0.05543607473373413,
+    0.07726427912712097,
+    0.15905364354451468
+   ],
+   "candidates": [
+    "a state Supreme Court appointment",
+    "a political opinion column",
+    "a casino blackjack game",
+    "Israel and China"
+   ]
+  },
+  {
+   "row": 6,
+   "doc": "doc_00000002",
+   "true_pos": 0,
+   "pred_simple": 0,
+   "pred_shift": 0,
+   "lp_inj": [
+    -5.675470054149628,
+    -9.060092091560364,
+    -9.200581391652426,
+    -6.488197872415185
+   ],
+   "shift": [
+    -0.3743560314178467,
+    -1.1350212097167969,
+    -1.0833174387613944,
+    -0.578758032247424
+   ],
+   "candidates": [
+    "a political opinion column",
+    "NFL football",
+    "Israel and China",
+    "a state Supreme Court appointment"
+   ]
+  },
+  {
+   "row": 7,
+   "doc": "doc_00000002",
+   "true_pos": 0,
+   "pred_simple": 0,
+   "pred_shift": 2,
+   "lp_inj": [
+    -5.796801686286926,
+    -8.982422590255737,
+    -6.241024899482727,
+    -6.056598752737045
+   ],
+   "shift": [
+    -0.49568766355514526,
+    -1.0573517084121704,
+    -0.4049200296401976,
+    -0.5227597951889038
+   ],
+   "candidates": [
+    "a political opinion column",
+    "NFL football",
+    "the Uber app in Dubai",
+    "a casino blackjack game"
+   ]
+  },
+  {
+   "row": 8,
+   "doc": "doc_00000017",
+   "true_pos": 3,
+   "pred_simple": 0,
+   "pred_shift": 2,
+   "lp_inj": [
+    -5.879094421863556,
+    -7.1496437072753904,
+    -7.4832115650177,
+    -10.871092319488525
+   ],
+   "shift": [
+    -0.7612050076325731,
+    -1.3135388374328612,
+    -0.05679202079772949,
+    -2.9460214376449585
+   ],
+   "candidates": [
+    "airstrikes on ISIS in Syria",
+    "the Uber app in Dubai",
+    "luxury cars in rap music",
+    "NFL football"
+   ]
+  },
+  {
+   "row": 9,
+   "doc": "doc_00000017",
+   "true_pos": 3,
+   "pred_simple": 2,
+   "pred_shift": 2,
+   "lp_inj": [
+    -5.861799904704094,
+    -5.9768013000488285,
+    -5.204369068145752,
+    -7.750442266464233
+   ],
+   "shift": [
+    0.04763993546366674,
+    -0.14069643020629918,
+    0.38529419898986816,
+    0.1746286153793335
+   ],
+   "candidates": [
+    "a state Supreme Court appointment",
+    "the Uber app in Dubai",
+    "space exploration",
+    "NFL football"
+   ]
+  },
+  {
+   "row": 10,
+   "doc": "doc_00000017",
+   "true_pos": 0,
+   "pred_simple": 3,
+   "pred_shift": 2,
+   "lp_inj": [
+    -8.471773862838745,
+    -6.998339384794235,
+    -7.496527528762817,
+    -4.203135935823957
+   ],
+   "shift": [
+    -0.5467029809951782,
+    -0.26082900166511536,
+    -0.0701079845428465,
+    -0.2569761380254927
+   ],
+   "candidates": [
+    "NFL football",
+    "the Snowden surveillance leaks",
+    "luxury cars in rap music",
+    "Hillary Clinton's campaign"
+   ]
+  },
+  {
+   "row": 11,
+   "doc": "doc_00000017",
+   "true_pos": 1,
+   "pred_simple": 2,
+   "pred_shift": 2,
+   "lp_inj": [
+    -8.06003384590149,
+    -9.953233480453491,
+    -5.6547077894210815,
+    -9.897690931955973
+   ],
+   "shift": [
+    -0.6336143016815194,
+    -2.0281625986099243,
+    -0.35359376668930054,
+    -1.7804269790649414
+   ],
+   "candidates": [
+    "luxury cars in rap music",
+    "NFL football",
+    "a political opinion column",
+    "Israel and China"
+   ]
+  },
+  {
+   "row": 12,
+   "doc": "doc_00000018",
+   "true_pos": 1,
+   "pred_simple": 0,
+   "pred_shift": 3,
+   "lp_inj": [
+    -6.182684445381165,
+    -6.210544109344482,
+    -8.815310796101889,
+    -7.66819658279419
+   ],
+   "shift": [
+    -0.3465795755386356,
+    -0.6767051517963409,
+    -0.6980468432108573,
+    -0.24177703857421928
+   ],
+   "candidates": [
+    "the Uber app in Dubai",
+    "a casino blackjack game",
+    "Israel and China",
+    "luxury cars in rap music"
+   ]
+  },
+  {
+   "row": 13,
+   "doc": "doc_00000018",
+   "true_pos": 0,
+   "pred_simple": 3,
+   "pred_shift": 1,
+   "lp_inj": [
+    -5.649635076522827,
+    -6.849223852157593,
+    -8.224106073379517,
+    -5.23682177066803
+   ],
+   "shift": [
+    -0.11579611897468567,
+    -0.1117134690284729,
+    -0.2990351915359497,
+    -0.11893235643704703
+   ],
+   "candidates": [
+    "a casino blackjack game",
+    "the Snowden surveillance leaks",
+    "NFL football",
+    "airstrikes on ISIS in Syria"
+   ]
+  },
+  {
+   "row": 14,
+   "doc": "doc_00000018",
+   "true_pos": 3,
+   "pred_simple": 0,
+   "pred_shift": 0,
+   "lp_inj": [
+    -5.331058382987976,
+    -5.4741610288619995,
+    -8.314274787902832,
+    -5.7198206782341
+   ],
+   "shift": [
+    0.25860488414764404,
+    -0.1730470061302185,
+    -0.38920390605926514,
+    -0.18598172068595886
+   ],
+   "candidates": [
+    "space exploration",
+    "a political opinion column",
+    "NFL football",
+    "a casino blackjack game"
+   ]
+  },
+  {
+   "row": 15,
+   "doc": "doc_00000018",
+   "true_pos": 2,
+   "pred_simple": 0,
+   "pred_shift": 0,
+   "lp_inj": [
+    -5.437089204788208,
+    -9.67556881904602,
+    -5.952843397855759,
+    -6.028082857529323
+   ],
+   "shift": [
+    -0.135975182056427,
+    -1.0439269542694092,
+    -0.4190044403076172,
+    -0.9101934432983398
+   ],
+   "candidates": [
+    "a political opinion column",
+    "President Obama",
+    "a casino blackjack game",
+    "airstrikes on ISIS in Syria"
+   ]
+  },
+  {
+   "row": 16,
+   "doc": "doc_00000019",
+   "true_pos": 2,
+   "pred_simple": 3,
+   "pred_shift": 3,
+   "lp_inj": [
+    -8.223386923472086,
+    -5.978013634681702,
+    -7.416152381896973,
+    -3.8786011426236655
+   ],
+   "shift": [
+    -0.10612297058105469,
+    -0.14190876483917236,
+    0.010267162322997514,
+    0.06755865517479842
+   ],
+   "candidates": [
+    "Israel and China",
+    "the Uber app in Dubai",
+    "luxury cars in rap music",
+    "Hillary Clinton's campaign"
+   ]
+  },
+  {
+   "row": 17,
+   "doc": "doc_00000019",
+   "true_pos": 3,
+   "pred_simple": 2,
+   "pred_shift": 3,
+   "lp_inj": [
+    -8.76694361368815,
+    -7.052709877490997,
+    -5.401983429988225,
+    -7.6402836561203005
+   ],
+   "shift": [
+    -0.6496796607971191,
+    -0.31519949436187744,
+    -0.28409401575724225,
+    -0.21386411190032995
+   ],
+   "candidates": [
+    "Israel and China",
+    "the Snowden surveillance leaks",
+    "airstrikes on ISIS in Syria",
+    "luxury cars in rap music"
+   ]
+  },
+  {
+   "row": 18,
+   "doc": "doc_00000019",
+   "true_pos": 3,
+   "pred_simple": 1,
+   "pred_shift": 3,
+   "lp_inj": [
+    -8.935572504997253,
+    -4.22684027843934,
+    -5.768143792947133,
+    -7.5629606485366825
+   ],
+   "shift": [
+    -1.0105016231536865,
+    -0.28068048064087625,
+    -0.6502543787161503,
+    -0.13654110431671196
+   ],
+   "candidates": [
+    "NFL football",
+    "Hillary Clinton's campaign",
+    "airstrikes on ISIS in Syria",
+    "luxury cars in rap music"
+   ]
+  },
+  {
+   "row": 19,
+   "doc": "doc_00000019",
+   "true_pos": 0,
+   "pred_simple": 3,
+   "pred_shift": 0,
+   "lp_inj": [
+    -7.355291771888733,
+    -6.106820082664489,
+    -6.691466301679611,
+    -5.739294767379761
+   ],
+   "shift": [
+    0.07112777233123779,
+    -0.2707152128219601,
+    0.04604408144950867,
+    -0.20545580983161926
+   ],
+   "candidates": [
+    "luxury cars in rap music",
+    "the Uber app in Dubai",
+    "the Snowden surveillance leaks",
+    "a casino blackjack game"
+   ]
+  },
+  {
+   "row": 20,
+   "doc": "doc_00000022",
+   "true_pos": 2,
+   "pred_simple": 2,
+   "pred_shift": 1,
+   "lp_inj": [
+    -6.887938380241394,
+    -8.205951929092407,
+    -5.956128239631653,
+    -8.696014881134033
+   ],
+   "shift": [
+    -0.15042799711227417,
+    0.4256899356842041,
+    -0.3664649724960327,
+    -0.5787509282430019
+   ],
+   "candidates": [
+    "the Snowden surveillance leaks",
+    "President Obama",
+    "space exploration",
+    "Israel and China"
+   ]
+  },
+  {
+   "row": 21,
+   "doc": "doc_00000022",
+   "true_pos": 2,
+   "pred_simple": 1,
+   "pred_shift": 2,
+   "lp_inj": [
+    -8.345372200012207,
+    -5.509803533554077,
+    -5.5705918073654175,
+    -6.0642448212951425
+   ],
+   "shift": [
+    -0.42030131816864014,
+    -0.20868951082229614,
+    0.019071459770202637,
+    -0.1548049811273815
+   ],
+   "candidates": [
+    "NFL football",
+    "a political opinion column",
+    "space exploration",
+    "a state Supreme Court appointment"
+   ]
+  },
+  {
+   "row": 22,
+   "doc": "doc_00000022",
+   "true_pos": 0,
+   "pred_simple": 2,
+   "pred_shift": 0,
+   "lp_inj": [
+    -5.384535193443298,
+    -8.640096187591553,
+    -3.9786363004423038,
+    -6.236401736736298
+   ],
+   "shift": [
+    0.20512807369232178,
+    -0.008454322814941406,
+    -0.03247650264383983,
+    -0.3269618965685366
+   ],
+   "candidates": [
+    "space exploration",
+    "President Obama",
+    "Hillary Clinton's campaign",
+    "a state Supreme Court appointment"
+   ]
+  },
+  {
+   "row": 23,
+   "doc": "doc_00000022",
+   "true_pos": 1,
+   "pred_simple": 1,
+   "pred_shift": 0,
+   "lp_inj": [
+    -7.630820274353027,
+    -6.466688394546509,
+    -7.4277719259262085,
+    -7.155622988939285
+   ],
+   "shift": [
+    -0.20440073013305682,
+    -0.8770251274108887,
+    -0.6902615427970886,
+    -1.6217840313911438
+   ],
+   "candidates": [
+    "luxury cars in rap music",
+    "space exploration",
+    "the Snowden surveillance leaks",
+    "a casino blackjack game"
+   ]
+  },
+  {
+   "row": 24,
+   "doc": "doc_00000028",
+   "true_pos": 0,
+   "pred_simple": 1,
+   "pred_shift": 1,
+   "lp_inj": [
+    -8.609263896942139,
+    -5.314672768115997,
+    -5.797499183565378,
+    -6.655466437339783
+   ],
+   "shift": [
+    0.022377967834472656,
+    0.2749904990196228,
+    0.11194065660238284,
+    0.08204394578933716
+   ],
+   "candidates": [
+    "President Obama",
+    "space exploration",
+    "a state Supreme Court appointment",
+    "the Snowden surveillance leaks"
+   ]
+  },
+  {
+   "row": 25,
+   "doc": "doc_00000028",
+   "true_pos": 0,
+   "pred_simple": 2,
+   "pred_shift": 2,
+   "lp_inj": [
+    -9.302760124206543,
+    -8.78305435180664,
+    -6.129080760478973,
+    -8.86448860168457
+   ],
+   "shift": [
+    -0.6711182594299316,
+    -0.8579834699630737,
+    -0.21964092031121218,
+    -0.747224648793539
+   ],
+   "candidates": [
+    "President Obama",
+    "NFL football",
+    "a state Supreme Court appointment",
+    "Israel and China"
+   ]
+  },
+  {
+   "row": 26,
+   "doc": "doc_00000028",
+   "true_pos": 1,
+   "pred_simple": 2,
+   "pred_shift": 0,
+   "lp_inj": [
+    -5.8884954929351805,
+    -8.84943175315857,
+    -5.310010532538096,
+    -8.4451744556427
+   ],
+   "shift": [
+    -0.05239062309265119,
+    -0.217789888381958,
+    -0.19212111830711365,
+    -0.5201035737991333
+   ],
+   "candidates": [
+    "the Uber app in Dubai",
+    "President Obama",
+    "airstrikes on ISIS in Syria",
+    "NFL football"
+   ]
+  },
+  {
+   "row": 27,
+   "doc": "doc_00000028",
+   "true_pos": 2,
+   "pred_simple": 0,
+   "pred_shift": 2,
+   "lp_inj": [
+    -3.9041407852018892,
+    -6.050217392295599,
+    -8.42654538154602,
+    -8.160445213317871
+   ],
+   "shift": [
+    0.0420190125965747,
+    -0.1407775521278376,
+    0.20509648323059082,
+    -0.043181260426839785
+   ],
+   "candidates": [
+    "Hillary Clinton's campaign",
+    "a state Supreme Court appointment",
+    "President Obama",
+    "Israel and China"
+   ]
+  },
+  {
+   "row": 28,
+   "doc": "doc_00000035",
+   "true_pos": 3,
+   "pred_simple": 3,
+   "pred_shift": 0,
+   "lp_inj": [
+    -6.231618976593017,
+    -10.370074033737183,
+    -9.070492585500082,
+    -5.687460005283356
+   ],
+   "shift": [
+    -0.3955141067504879,
+    -1.7384321689605713,
+    -0.9532286326090507,
+    -0.569570591052373
+   ],
+   "candidates": [
+    "the Uber app in Dubai",
+    "President Obama",
+    "Israel and China",
+    "airstrikes on ISIS in Syria"
+   ]
+  },
+  {
+   "row": 29,
+   "doc": "doc_00000035",
+   "true_pos": 0,
+   "pred_simple": 1,
+   "pred_shift": 1,
+   "lp_inj": [
+    -5.227759162584941,
+    -3.7534115745002055,
+    -8.230711460113525,
+    -5.864256656169891
+   ],
+   "shift": [
+    -0.10986974835395813,
+    0.19274822329825847,
+    -0.11344750722249408,
+    0.045183183997870024
+   ],
+   "candidates": [
+    "airstrikes on ISIS in Syria",
+    "Hillary Clinton's campaign",
+    "Israel and China",
+    "a state Supreme Court appointment"
+   ]
+  },
+  {
+   "row": 30,
+   "doc": "doc_00000035",
+   "true_pos": 2,
+   "pred_simple": 2,
+   "pred_shift": 0,
+   "lp_inj": [
+    -5.412116050720215,
+    -6.211523532867432,
+    -5.355288545290629,
+    -5.854306191205978
+   ],
+   "shift": [
+    0.17754721641540527,
+    -0.37541866302490234,
+    -0.2373991310596466,
+    -0.3204672336578369
+   ],
+   "candidates": [
+    "space exploration",
+    "the Uber app in Dubai",
+    "airstrikes on ISIS in Syria",
+    "a casino blackjack game"
+   ]
+  },
+  {
+   "row": 31,
+   "doc": "doc_00000035",
+   "true_pos": 3,
+   "pred_simple": 3,
+   "pred_shift": 2,
+   "lp_inj": [
+    -8.49538516998291,
+    -5.915504485368729,
+    -8.70695149898529,
+    -5.340928852558136
+   ],
+   "shift": [
+    -0.5703142881393433,
+    -0.38166552782058716,
+    -0.0753096342086792,
+    -0.22303943832715323
+   ],
+   "candidates": [
+    "NFL football",
+    "a casino blackjack game",
+    "President Obama",
+    "airstrikes on ISIS in Syria"
+   ]
+  },
+  {
+   "row": 32,
+   "doc": "doc_00000047",
+   "true_pos": 2,
+   "pred_simple": 1,
+   "pred_shift": 1,
+   "lp_inj": [
+    -9.677611947059631,
+    -6.344380974769592,
+    -6.888909721374512,
+    -9.391432921091715
+   ],
+   "shift": [
+    -1.04597008228302,
+    -0.7547177076339722,
+    -1.0528048515319828,
+    -1.2741689682006836
+   ],
+   "candidates": [
+    "President Obama",
+    "space exploration",
+    "the Uber app in Dubai",
+    "Israel and China"
+   ]
+  },
+  {
+   "row": 33,
+   "doc": "doc_00000047",
+   "true_pos": 3,
+   "pred_simple": 2,
+   "pred_shift": 0,
+   "lp_inj": [
+    -6.430776208639145,
+    -8.121544480323792,
+    -3.886608052864176,
+    -6.113518071174622
+   ],
+   "shift": [
+    0.306734174489975,
+    -0.1964735984802246,
+    0.05955174493428794,
+    -0.27741320133209246
+   ],
+   "candidates": [
+    "the Snowden surveillance leaks",
+    "NFL football",
+    "Hillary Clinton's campaign",
+    "the Uber app in Dubai"
+   ]
+  },
+  {
+   "row": 34,
+   "doc": "doc_00000047",
+   "true_pos": 2,
+   "pred_simple": 3,
+   "pred_shift": 1,
+   "lp_inj": [
+    -9.136824369430542,
+    -7.53027982711792,
+    -6.0865836381912235,
+    -5.362204223871231
+   ],
+   "shift": [
+    -1.211753487586975,
+    -0.10386028289794957,
+    -0.2504787683486942,
+    -0.24431480964024832
+   ],
+   "candidates": [
+    "NFL football",
+    "luxury cars in rap music",
+    "the Uber app in Dubai",
+    "airstrikes on ISIS in Syria"
+   ]
+  },
+  {
+   "row": 35,
+   "doc": "doc_00000047",
+   "true_pos": 1,
+   "pred_simple": 0,
+   "pred_shift": 0,
+   "lp_inj": [
+    -5.019845128059387,
+    -6.005998587608337,
+    -8.189805666605631,
+    -8.452999114990234
+   ],
+   "shift": [
+    0.5698181390762329,
+    -0.16989371776580775,
+    -0.07254171371459961,
+    0.17864274978637695
+   ],
+   "candidates": [
+    "space exploration",
+    "the Uber app in Dubai",
+    "Israel and China",
+    "President Obama"
+   ]
+  },
+  {
+   "row": 36,
+   "doc": "doc_00000048",
+   "true_pos": 1,
+   "pred_simple": 3,
+   "pred_shift": 0,
+   "lp_inj": [
+    -6.241785334795713,
+    -8.503037452697754,
+    -5.507652620474498,
+    -4.358293875902746
+   ],
+   "shift": [
+    -0.33234549462795204,
+    -0.3857734998067226,
+    -0.389763206243515,
+    -0.4121340781042817
+   ],
+   "candidates": [
+    "a state Supreme Court appointment",
+    "Israel and China",
+    "airstrikes on ISIS in Syria",
+    "Hillary Clinton's campaign"
+   ]
+  },
+  {
+   "row": 37,
+   "doc": "doc_00000048",
+   "true_pos": 0,
+   "pred_simple": 2,
+   "pred_shift": 0,
+   "lp_inj": [
+    -8.139655272165934,
+    -6.020738530158996,
+    -5.378347297509511,
+    -7.446375727653503
+   ],
+   "shift": [
+    -0.022391319274902344,
+    -0.1846336603164671,
+    -0.26045788327852826,
+    -0.43671448230743426
+   ],
+   "candidates": [
+    "Israel and China",
+    "the Uber app in Dubai",
+    "airstrikes on ISIS in Syria",
+    "the Evil Dead horror game"
+   ]
+  },
+  {
+   "row": 38,
+   "doc": "doc_00000048",
+   "true_pos": 1,
+   "pred_simple": 2,
+   "pred_shift": 0,
+   "lp_inj": [
+    -5.757710194587707,
+    -9.868747075398764,
+    -5.608706951141357,
+    -9.109504699707031
+   ],
+   "shift": [
+    0.07839467525482213,
+    -1.7514831225077323,
+    -0.3075929284095764,
+    -0.4778628349304199
+   ],
+   "candidates": [
+    "the Uber app in Dubai",
+    "Israel and China",
+    "a political opinion column",
+    "President Obama"
+   ]
+  },
+  {
+   "row": 39,
+   "doc": "doc_00000048",
+   "true_pos": 3,
+   "pred_simple": 0,
+   "pred_shift": 1,
+   "lp_inj": [
+    -6.264307856559753,
+    -8.832359910011292,
+    -7.335364508628845,
+    -9.216061115264893
+   ],
+   "shift": [
+    -0.4282029867172241,
+    -0.20071804523468018,
+    -0.3257032632827759,
+    -1.0987971623738613
+   ],
+   "candidates": [
+    "the Uber app in Dubai",
+    "President Obama",
+    "the Evil Dead horror game",
+    "Israel and China"
+   ]
+  },
+  {
+   "row": 40,
+   "doc": "doc_00000054",
+   "true_pos": 2,
+   "pred_simple": 1,
+   "pred_shift": 3,
+   "lp_inj": [
+    -7.424907088279724,
+    -5.846496909856796,
+    -6.288745678216219,
+    -6.534858524799347
+   ],
+   "shift": [
+    0.0015124559402464044,
+    -0.3126579523086548,
+    -0.37930583804845774,
+    0.20265185832977295
+   ],
+   "candidates": [
+    "luxury cars in rap music",
+    "a casino blackjack game",
+    "a state Supreme Court appointment",
+    "the Snowden surveillance leaks"
+   ]
+  },
+  {
+   "row": 41,
+   "doc": "doc_00000054",
+   "true_pos": 0,
+   "pred_simple": 2,
+   "pred_shift": 0,
+   "lp_inj": [
+    -5.908104172348976,
+    -5.641737103462219,
+    -4.002091581997957,
+    -6.0825955152511595
+   ],
+   "shift": [
+    0.0013356678187852467,
+    -0.05207383632659912,
+    -0.05593178419949263,
+    -0.2464906454086302
+   ],
+   "candidates": [
+    "a state Supreme Court appointment",
+    "space exploration",
+    "Hillary Clinton's campaign",
+    "the Uber app in Dubai"
+   ]
+  },
+  {
+   "row": 42,
+   "doc": "doc_00000054",
+   "true_pos": 3,
+   "pred_simple": 0,
+   "pred_shift": 3,
+   "lp_inj": [
+    -3.9672115548164584,
+    -6.258052945137024,
+    -7.34322452545166,
+    -5.635403944551944
+   ],
+   "shift": [
+    -0.021051757017994444,
+    -0.6683896780014038,
+    -0.6057141423225403,
+    0.27403589561581665
+   ],
+   "candidates": [
+    "Hillary Clinton's campaign",
+    "space exploration",
+    "the Snowden surveillance leaks",
+    "a state Supreme Court appointment"
+   ]
+  },
+  {
+   "row": 43,
+   "doc": "doc_00000054",
+   "true_pos": 0,
+   "pred_simple": 0,
+   "pred_shift": 0,
+   "lp_inj": [
+    -4.92159957587719,
+    -7.456286334991455,
+    -6.85059517621994,
+    -7.714905261993408
+   ],
+   "shift": [
+    0.987840264290571,
+    -0.029866790771484908,
+    -0.11308479309082031,
+    0.4023586908976231
+   ],
+   "candidates": [
+    "a state Supreme Court appointment",
+    "luxury cars in rap music",
+    "the Snowden surveillance leaks",
+    "Israel and China"
+   ]
+  },
+  {
+   "row": 44,
+   "doc": "doc_00000062",
+   "true_pos": 1,
+   "pred_simple": 0,
+   "pred_shift": 3,
+   "lp_inj": [
+    -4.83936313976883,
+    -7.426560759544373,
+    -7.113191986083985,
+    -7.70932903289795
+   ],
+   "shift": [
+    -0.893203341970366,
+    -0.6890503764152527,
+    -1.2770871162414554,
+    -0.28290948867797905
+   ],
+   "candidates": [
+    "Hillary Clinton's campaign",
+    "the Snowden surveillance leaks",
+    "the Uber app in Dubai",
+    "luxury cars in rap music"
+   ]
+  },
+  {
+   "row": 45,
+   "doc": "doc_00000062",
+   "true_pos": 0,
+   "pred_simple": 1,
+   "pred_shift": 1,
+   "lp_inj": [
+    -7.381658434867859,
+    -4.244880854983785,
+    -9.637399196624756,
+    -6.0116599301497144
+   ],
+   "shift": [
+    -0.644148051738739,
+    -0.2987210571853214,
+    -1.0057573318481445,
+    -0.8937705159187317
+   ],
+   "candidates": [
+    "the Snowden surveillance leaks",
+    "Hillary Clinton's campaign",
+    "President Obama",
+    "airstrikes on ISIS in Syria"
+   ]
+  },
+  {
+   "row": 46,
+   "doc": "doc_00000062",
+   "true_pos": 0,
+   "pred_simple": 1,
+   "pred_shift": 0,
+   "lp_inj": [
+    -6.5351901948452,
+    -5.693059742450714,
+    -6.162327778339386,
+    -7.2959962606430055
+   ],
+   "shift": [
+    0.2023201882839203,
+    -0.15922078490257263,
+    -0.25288793817162514,
+    -0.2863350152969364
+   ],
+   "candidates": [
+    "the Snowden surveillance leaks",
+    "a casino blackjack game",
+    "a state Supreme Court appointment",
+    "the Evil Dead horror game"
+   ]
+  },
+  {
+   "row": 47,
+   "doc": "doc_00000062",
+   "true_pos": 0,
+   "pred_simple": 3,
+   "pred_shift": 2,
+   "lp_inj": [
+    -8.106367945671082,
+    -5.726581195990245,
+    -5.681232213973999,
+    -4.695196128483803
+   ],
+   "shift": [
+    -1.3688575625419617,
+    -0.6086917817592621,
+    -0.380118191242218,
+    -0.7490363306853394
+   ],
+   "candidates": [
+    "the Snowden surveillance leaks",
+    "airstrikes on ISIS in Syria",
+    "a political opinion column",
+    "Hillary Clinton's campaign"
+   ]
+  },
+  {
+   "row": 48,
+   "doc": "doc_00000065",
+   "true_pos": 2,
+   "pred_simple": 0,
+   "pred_shift": 3,
+   "lp_inj": [
+    -5.471137583255768,
+    -5.60712343454361,
+    -6.812298774719238,
+    -6.991740417480469
+   ],
+   "shift": [
+    0.06270137429237366,
+    -0.48923402031262686,
+    0.19736247062683088,
+    0.4346791267395016
+   ],
+   "candidates": [
+    "a casino blackjack game",
+    "airstrikes on ISIS in Syria",
+    "the Evil Dead horror game",
+    "luxury cars in rap music"
+   ]
+  },
+  {
+   "row": 49,
+   "doc": "doc_00000065",
+   "true_pos": 2,
+   "pred_simple": 3,
+   "pred_shift": 3,
+   "lp_inj": [
+    -8.2482541402181,
+    -5.793038487434387,
+    -7.4800254821777346,
+    -3.9660547843835956
+   ],
+   "shift": [
+    -0.13099018732706824,
+    -0.2591995298862457,
+    -0.4703642368316654,
+    -0.01989498658513167
+   ],
+   "candidates": [
+    "Israel and China",
+    "a casino blackjack game",
+    "the Evil Dead horror game",
+    "Hillary Clinton's campaign"
+   ]
+  }
+ ]
+}

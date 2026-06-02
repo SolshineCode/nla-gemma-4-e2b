@@ -1,0 +1,66 @@
+{
+  "n_outputs": 50,
+  "n_unique_exact_strings": 45,
+  "n_unique_50char_prefixes": 31,
+  "n_unique_100char_prefixes": 34,
+  "n_total_pairs": 1225,
+  "mean_pairwise_quickratio": 0.7983736004654839,
+  "median_pairwise_quickratio": 0.8409818569903948,
+  "max_pairwise_quickratio": 1.0,
+  "n_pairs_above_0.9": 54,
+  "n_pairs_above_0.7": 996,
+  "n_pairs_above_0.5": 1225,
+  "exact_duplicate_clusters": [
+    [
+      0,
+      13,
+      30
+    ],
+    [
+      4,
+      35,
+      46
+    ],
+    [
+      21,
+      29
+    ]
+  ],
+  "top_5_similar_pairs": [
+    {
+      "i": 0,
+      "j": 13,
+      "ratio": 1.0,
+      "snippet_i": "The model tracks a list of country-specific statistical weights, where each entry is a high-precision decimal representi",
+      "snippet_j": "The model tracks a list of country-specific statistical weights, where each entry is a high-precision decimal representi"
+    },
+    {
+      "i": 0,
+      "j": 30,
+      "ratio": 1.0,
+      "snippet_i": "The model tracks a list of country-specific statistical weights, where each entry is a high-precision decimal representi",
+      "snippet_j": "The model tracks a list of country-specific statistical weights, where each entry is a high-precision decimal representi"
+    },
+    {
+      "i": 4,
+      "j": 35,
+      "ratio": 1.0,
+      "snippet_i": "The model tracks a list of country-specific statistical data, maintaining a high-precision numeric register (e.g., 16 de",
+      "snippet_j": "The model tracks a list of country-specific statistical data, maintaining a high-precision numeric register (e.g., 16 de"
+    },
+    {
+      "i": 4,
+      "j": 46,
+      "ratio": 1.0,
+      "snippet_i": "The model tracks a list of country-specific statistical data, maintaining a high-precision numeric register (e.g., 16 de",
+      "snippet_j": "The model tracks a list of country-specific statistical data, maintaining a high-precision numeric register (e.g., 16 de"
+    },
+    {
+      "i": 13,
+      "j": 30,
+      "ratio": 1.0,
+      "snippet_i": "The model tracks a list of country-specific statistical weights, where each entry is a high-precision decimal representi",
+      "snippet_j": "The model tracks a list of country-specific statistical weights, where each entry is a high-precision decimal representi"
+    }
+  ]
+}

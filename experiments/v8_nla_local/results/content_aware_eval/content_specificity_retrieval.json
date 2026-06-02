@@ -1,0 +1,120 @@
+{
+ "config": {
+  "n_rows": 50,
+  "n_unique_docs": 13,
+  "av_file": "av_outputs_v0_1_dd_n50_from_neuronpedia.json",
+  "source_field": "detokenized_text_truncated (truncated at activation token)",
+  "n_permutations": 5000,
+  "template_collapse": "18/50 share the 'country-specific...' prefix"
+ },
+ "methods": {
+  "tfidf_word": {
+   "method": "tfidf_word",
+   "row_level": {
+    "top1": 0.04,
+    "top5": 0.14,
+    "mrr": 0.10770910413171779,
+    "mean_rank": 27.36,
+    "chance_top1": 0.02,
+    "chance_mean_rank": 25.5
+   },
+   "doc_level": {
+    "n_docs": 13,
+    "top1": 0.1,
+    "top3": 0.28,
+    "mean_rank": 6.54,
+    "chance_top1": 0.07692307692307693,
+    "chance_mean_rank": 7.0
+   },
+   "same_doc_mean_sim": 0.0033829088371099907,
+   "diff_doc_mean_sim": 0.003076485675790253,
+   "same_minus_diff": 0.00030642316131973763,
+   "permutation": {
+    "doc_top1": {
+     "observed": 0.1,
+     "null_mean": 0.08097599999999999,
+     "p_value": 0.3785242951409718,
+     "z": 0.5053559530390953
+    },
+    "same_minus_diff_gap": {
+     "observed": 0.00030642316131973763,
+     "null_mean": 9.28720350890273e-05,
+     "p_value": 0.3395320935812837,
+     "z": 0.3695561139385314
+    }
+   }
+  },
+  "tfidf_char": {
+   "method": "tfidf_char",
+   "row_level": {
+    "top1": 0.02,
+    "top5": 0.14,
+    "mrr": 0.08770817466104906,
+    "mean_rank": 26.06,
+    "chance_top1": 0.02,
+    "chance_mean_rank": 25.5
+   },
+   "doc_level": {
+    "n_docs": 13,
+    "top1": 0.08,
+    "top3": 0.2,
+    "mean_rank": 6.84,
+    "chance_top1": 0.07692307692307693,
+    "chance_mean_rank": 7.0
+   },
+   "same_doc_mean_sim": 0.05761364217682962,
+   "diff_doc_mean_sim": 0.05748832027221687,
+   "same_minus_diff": 0.00012532190461275045,
+   "permutation": {
+    "doc_top1": {
+     "observed": 0.08,
+     "null_mean": 0.079236,
+     "p_value": 0.5782843431313738,
+     "z": 0.02157971420815369
+    },
+    "same_minus_diff_gap": {
+     "observed": 0.00012532190461275045,
+     "null_mean": 0.000418443583356325,
+     "p_value": 0.5810837832433513,
+     "z": -0.22432161778873347
+    }
+   }
+  },
+  "semantic": {
+   "method": "semantic:all-MiniLM-L6-v2",
+   "row_level": {
+    "top1": 0.02,
+    "top5": 0.1,
+    "mrr": 0.09260668717517305,
+    "mean_rank": 26.52,
+    "chance_top1": 0.02,
+    "chance_mean_rank": 25.5
+   },
+   "doc_level": {
+    "n_docs": 13,
+    "top1": 0.1,
+    "top3": 0.22,
+    "mean_rank": 7.02,
+    "chance_top1": 0.07692307692307693,
+    "chance_mean_rank": 7.0
+   },
+   "same_doc_mean_sim": 0.06016695871949196,
+   "diff_doc_mean_sim": 0.059095725417137146,
+   "same_minus_diff": 0.0010712333023548126,
+   "permutation": {
+    "doc_top1": {
+     "observed": 0.1,
+     "null_mean": 0.080264,
+     "p_value": 0.366126774645071,
+     "z": 0.5604081794179293
+    },
+    "same_minus_diff_gap": {
+     "observed": 0.0010712333023548126,
+     "null_mean": 0.0003033640183508396,
+     "p_value": 0.4647070585882823,
+     "z": 0.09879338693716373
+    }
+   }
+  }
+ }
+}
