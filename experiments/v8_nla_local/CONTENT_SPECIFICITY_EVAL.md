@@ -62,7 +62,7 @@ test (shuffle which AV output is assigned to which row, recompute the metric).
 | Non-template subset, tail, semantic | doc top-1 | 0.062 | 0.077 | 0.84 (gap) | no |
 | LLM judge, Claude Haiku 4.5 (5-way) | accuracy | 0.240 | 0.200 | 0.29 (binom) | no |
 | LLM judge, Claude Sonnet 4.6 (5-way, n=30) | accuracy | 0.267 | 0.200 | 0.24 (binom) | no |
-| LLM judge, Gemini 3.5 Flash (5-way) | accuracy | n/a | 0.200 | n/a | unavailable (auth) |
+| LLM judge, Gemini via Antigravity (5-way) | accuracy | n/a | 0.200 | n/a | unavailable (auth) |
 
 The Sonnet panel timed out on a 300s `claude -p` call after 3 of 5 batches; the 30
 completed trials are scored above (a stronger judge does not rescue signal either). The
