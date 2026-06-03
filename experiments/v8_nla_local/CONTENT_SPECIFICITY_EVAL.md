@@ -116,14 +116,19 @@ away, landing its TEXT output at chance (0.10, p=0.34). A single forward-injecti
 single-token probe behaves the same (shift-vs-baseline 0.28, p=0.36, non-degenerate).
 
 Three consequences:
-1. **The gap is the verbalizer, not an intrinsic ceiling.** The information needed
-   for per-row content fidelity is present in the 2B-L23 activation. Better AV
-   training (more steps, larger corpus, less template collapse) can in principle
-   recover it. This is the fixable, hopeful reading, and it is the measured one.
-2. **It refutes the polysemanticity-at-2B-scale hypothesis for doc-level content.**
+1. **The gap is the verbalizer's reading of the activation, not an intrinsic ceiling.**
+   The information needed for per-row content fidelity is present in the 2B-L23
+   activation. The open problem is the verbalizer's conditioning on the injected
+   activation — it largely ignores the injection and emits a learned prior (the
+   template collapse on file). Surfacing that signal through the AV is an active
+   research direction, not a settled matter of training budget. This is the hopeful
+   reading, and it is the measured one.
+2. **It weighs against the polysemanticity-at-2B-scale hypothesis for doc-level content.**
    The prior calibration doc speculated the 2B activation might intrinsically encode
-   less per-instance specificity. For document identity it does not: 60% linear
-   decodability says the specificity is there.
+   less per-instance specificity. For document identity that reading is hard to
+   sustain: 60% linear decodability says the coarse specificity is there. How much
+   finer per-entity specificity the activation carries — and the role of
+   polysemanticity in it — remains under active investigation.
 3. **It validates the eval method.** The same retrieval that finds nothing in the AV
    output finds a strong signal in the activation, so the AV-output null is a real
    property of the AV, not a blind spot of the metric.
