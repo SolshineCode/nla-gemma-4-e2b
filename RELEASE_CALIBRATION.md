@@ -237,8 +237,12 @@ the RAW L23 activations gives top-1 0.240 vs 0.077 chance (p=0.0006), and a logi
 probe reads 13-way document identity at 60%. So the activation is strongly
 content-discriminative and the AV discards that signal (consistent with the template
 collapse, where the AV largely ignores the injected activation). Two consequences: the
-per-row gap is **fixable with better AV training, not an intrinsic 2B-L23 ceiling**, and
-this refutes the polysemanticity-at-2B-scale reading above for document-level content.
+per-row gap is about the **verbalizer's reading of the activation rather than an
+intrinsic 2B-L23 ceiling** (an open problem under active investigation, not a settled
+matter of training budget), and this is evidence against the polysemanticity-at-2B-scale
+reading above for document-level content — though investigation into the nature of
+polysemanticity in this NLA is ongoing, and the finer per-entity specificity question
+remains open.
 
 An 8-layer ceiling sweep (`eval_layer_ceiling_sweep.py`, n=200, chance 0.020) adds that
 every layer is content-rich, L23 (the NLA's site) is middling at 0.350, and L17 is the
