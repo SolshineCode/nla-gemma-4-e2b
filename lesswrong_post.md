@@ -144,6 +144,10 @@ The honest framing for citation: this is a **second-source small-scale NLA repli
 
 If you're building NLAs at any scale: run the steganography test (paraphrase the AV output, re-encode, measure ΔFVE). If ΔFVE is approximately zero, your AR is structurally projecting and your FVE number is not measuring what you think it's measuring. That check costs about 10 minutes of compute per checkpoint. I wish I'd run it on day 1.
 
+## Addendum — the follow-up that reframed the gap
+
+After this post I ran the test the cosine metric couldn't: is the content the AV misses actually present in the activation? A ceiling probe says yes. A simple logistic probe reads 13-way source-document identity straight from the raw L23 activation at **60%** accuracy, and doc-level retrieval on the raw activation runs at **0.24 vs 0.077 chance** — both well above anything the AV's text output reaches. So the AV isn't hitting a wall in the 2B model; it's failing to surface content the activation demonstrably encodes. That turns the per-row gap into a verbalizer training target rather than a ceiling. A layer sweep adds a lever: **L17 carries more than 2× the document signal of L23**, so a future NLA can also retarget the layer it reads. Full methods and numbers: `experiments/v8_nla_local/CONTENT_SPECIFICITY_EVAL.md`.
+
 ---
 
 *Source repo, NLA checkpoints, training data, and eval scripts are all open. DM me for source-repo access; everything else is at [`SolshineCode/nla-gemma-4-e2b`](https://github.com/SolshineCode/nla-gemma-4-e2b).*
