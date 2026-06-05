@@ -79,6 +79,31 @@ Supporting metrics already on file:
 - **AR cross-row discriminability** (`ar_scoreboard.json`): v0.1 argmax 2/50 (~chance),
   identity margin 0.002. Confirms the AR side too.
 
+## In-domain follow-up: the result is domain-sensitive
+
+The probes above are all on politically-themed **news** text — a genre absent from training.
+Re-running the same doc-level retrieval on held-out **in-domain** text (web text of the kind the
+AV was trained on) gives a different, honest picture: the v0.1 AV recovers its own source document
+**modestly but significantly above chance**.
+
+| Eval set | Metric | Observed | Chance | p | Signal? |
+|---|---|---|---|---|---|
+| In-domain web, n=50 / 13 docs | doc top-1 (lexical) | 0.140 | 0.077 | 0.078 | borderline (~1.8×) |
+| In-domain web, n=50 / 13 docs | doc top-1 (semantic) | 0.140 | 0.077 | 0.080 | borderline (~1.8×) |
+| In-domain web, n=160 / 40 docs | doc top-1 (lexical) | 0.056 | 0.025 | **0.010** | yes (~2.2×) |
+| In-domain web, n=160 / 40 docs | doc top-1 (semantic) | 0.050 | 0.025 | **0.035** | yes (~2.0×) |
+
+The larger n=160 run confirms the effect is real (both lexical and semantic ≈2× chance, p<0.05),
+with some genuinely content-bearing outputs (e.g. naming "1919 Paris Peace Conference" or
+"filmmaker Nanfu Wang"). **Crucial nuance — do not over-read this.** A blind reasoning-LLM judge,
+asked to pick which of 4 candidate source texts an AV output came from, still cannot beat chance
+(n=38, ~24% vs 25% chance). So the in-domain advantage is **occasional exact content-word
+surfacing, not systematic abstract conditioning** on the activation: the AV sometimes echoes a
+content word that happens to be in the source (which embedding retrieval catches) but does not
+reliably read the activation's theme/topic. The honest summary is that the verbalizer's
+content-surfacing is **domain-sensitive** — it occasionally surfaces source content in-domain and
+falls back to a learned prior out-of-domain — not that it conditions on the activation.
+
 ## Addressing the interpretability caveat directly
 
 The challenge included a fair point: the AV might map an activation to a real but
