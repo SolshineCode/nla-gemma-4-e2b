@@ -12,7 +12,9 @@
 
 ## What this is
 
-A working pair of NLA adapters for `google/gemma-4-E2B` at residual-stream layer 23, following the methodology of Fraser-Taliente, Kantamneni, Ong et al. 2026 ([Transformer Circuits](https://transformer-circuits.pub/2026/nla/)).
+A working pair of NLA adapters for `google/gemma-4-E2B` at residual-stream layer 23, following a **customized variation (see below)** of the methodology of Fraser-Taliente, Kantamneni, Ong et al. 2026 ([Transformer Circuits](https://transformer-circuits.pub/2026/nla/)).
+
+**Customizations vs the source methodology** (this is a *variation* adapted to consumer hardware + extra evaluation, not a faithful reproduction): **LoRA over a 4-bit NF4-quantized** frozen base instead of full-fine-tune bf16; a single 4 GB GPU with micro-batch 1 + gradient accumulation and a few hundred SFT steps (much smaller effective batch/step budget); **single-token activation injection** via a forward hook (the activation, L2-normalized to the embedding norm √d≈39.2, replaces one placeholder token's embedding); an **SFT-only** released pair (Phase-4 GRPO explored separately, not shipped); and **added evaluations** beyond round-trip cosine — content-specificity doc-level retrieval, in-domain-vs-OOD domain-sensitivity, an activation-ceiling probe, and the cross-version eval figure. Details in [`MODEL_CARD_AV.md`](MODEL_CARD_AV.md).
 
 - **Activation Verbalizer (AV)**: takes a 1536-d residual-stream activation, produces a natural-language explanation.
 - **Activation Reconstructor (AR)**: takes an explanation, reconstructs an activation vector that should round-trip to the original (cosine similarity).

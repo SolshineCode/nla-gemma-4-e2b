@@ -20,7 +20,15 @@ pipeline_tag: text-generation
 
 LoRA adapter for `google/gemma-4-E2B` that takes a 1536-dimensional residual-stream activation captured at layer 23 and produces a natural-language explanation of what the activation represents.
 
-This is the **first non-Anthropic-team open-source NLA Activation Verbalizer** released publicly. Trained end-to-end on a single 4 GB consumer GPU (NVIDIA GTX 1650 Ti Max-Q) following the methodology of Fraser-Taliente, Kantamneni, Ong et al. 2026 ([Transformer Circuits](https://transformer-circuits.pub/2026/nla/)).
+This is the **first non-Anthropic-team open-source NLA Activation Verbalizer** released publicly. Trained end-to-end on a single 4 GB consumer GPU (NVIDIA GTX 1650 Ti Max-Q) following a **customized variation (see below)** of the methodology of Fraser-Taliente, Kantamneni, Ong et al. 2026 ([Transformer Circuits](https://transformer-circuits.pub/2026/nla/)).
+
+### Customizations vs the source methodology
+This release adapts the NLA recipe to consumer hardware and adds evaluation, so it is a *variation*, not a faithful reproduction:
+- **Parameter-efficient + quantized, not full-fine-tune bf16:** a LoRA adapter (r=64 for v0.0.1, r=80 for v0.1) over a **4-bit NF4-quantized** frozen base, vs the source's full fine-tune. Loads in ~1.5 GB VRAM on top of the frozen base.
+- **Consumer-scale training budget:** single 4 GB GPU, micro-batch 1 with gradient accumulation, a few hundred SFT steps — far smaller effective batch and step count than the source recipe.
+- **Single-token activation injection:** a forward hook replaces one placeholder token's embedding with the L2-normalized activation rescaled to the embedding norm (√d_model ≈ 39.2), rather than the source injection scheme.
+- **SFT-only released pair:** Phase-4 GRPO was explored separately and is **not** in the shipped pair (it did not beat the SFT pair at 4 GB).
+- **Added evaluations beyond round-trip cosine:** content-specificity doc-level retrieval (lexical / semantic / LLM-judge), an in-domain-vs-out-of-domain domain-sensitivity analysis, an activation-ceiling probe, and a cross-version evaluation figure (above).
 
 Pairs with the matched [`Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1) reconstructor.
 

@@ -20,7 +20,10 @@ pipeline_tag: text-generation
 
 LoRA adapter (+ a 1536→1536 linear head) for `google/gemma-4-E2B` that takes a natural-language explanation produced by the matched [Activation Verbalizer](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1) and reconstructs a 1536-dimensional activation vector intended to round-trip (by cosine similarity) to the original L23 residual-stream activation.
 
-Trained end-to-end on a single 4 GB consumer GPU (NVIDIA GTX 1650 Ti Max-Q) following the methodology of Fraser-Taliente, Kantamneni, Ong et al. 2026 ([Transformer Circuits](https://transformer-circuits.pub/2026/nla/)).
+Trained end-to-end on a single 4 GB consumer GPU (NVIDIA GTX 1650 Ti Max-Q) following a **customized variation (see below)** of the methodology of Fraser-Taliente, Kantamneni, Ong et al. 2026 ([Transformer Circuits](https://transformer-circuits.pub/2026/nla/)).
+
+### Customizations vs the source methodology
+A consumer-hardware *variation*, not a faithful reproduction: a **LoRA adapter (+ a 1536→1536 linear head) over a 4-bit NF4-quantized** frozen base rather than full-fine-tune bf16; a single 4 GB GPU with micro-batch 1 + gradient accumulation and a modest SFT-step budget; an **SFT-only** released pair (Phase-4 GRPO explored separately, not shipped); and added AV-side evaluations beyond round-trip cosine (see the matched [`MODEL_CARD_AV.md`](MODEL_CARD_AV.md)). Note round-trip cosine on this AR is largely a structural-projection metric, not per-row faithfulness — see Limitations.
 
 ## How to use
 
