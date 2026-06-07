@@ -128,6 +128,23 @@ out-of-domain news, modestly but significantly above chance in-domain (see Limit
 cosine is shown with the caveat that it is structural-projection dominated, not a faithfulness
 metric. Regenerate with `make_nla_eval_figure.py` as new versions or evaluations land.
 
+## NLAttack capability-floor evaluation
+
+![NLAttack emergence dashboard for the v0.1 NLA bottleneck](figures/nlattack_v01_capability_floor.png)
+
+Beyond round-trip cosine and doc-retrieval, this release was run through the [NLAttack](https://github.com/SolshineCode/NLAttack) capability-floor harness — a battery of concept-survival and emergence tests that probe what the NLA's information bottleneck actually carries, independent of whether the verbalizer surfaces it in text. The figure above is NLAttack's emergence dashboard: nine axes, each scored against its own permutation null, combined into a single EmergenceIndex.
+
+On a held-out deception-domain eval set the v0.1 bottleneck scores **EmergenceIndex 0.601 — "established: stable, selective, generalizing representation."** The two highest axes are the load-bearing ones:
+
+- **decodability = 1.00** (raw AUC 0.993 vs 0.50 null). A linear probe reads the injected concept off the residual activation at ceiling. The content is in the activation.
+- **stability = 0.88** (margin 0.86). The probe direction holds across resampling seeds, so the signal is a real representation, not a single-seed artifact.
+- **selectivity = 0.51** and **effective_rank = 0.90** are moderate-to-strong: the representation is concept-specific rather than a frequency/length confound, and it spreads across a usable number of dimensions.
+- **sufficiency = 0.32** and **dose_response = 0.00** are weak: the activation barely beats a trivial input feature on a downstream task, and probe accuracy does not track training prevalence.
+
+The read is consistent with this release's headline limitation. The bottleneck is good — the concept survives the activation at near-perfect linear decodability and high stability — and the open problem is the verbalizer half, which does not reliably turn that decodable content into descriptive text. NLAttack quantifies the "content is present in the activation, not yet surfaced by the AV" finding as a capability floor rather than an accuracy claim.
+
+Four axes (content_adjacency, faithful_rank, graded_encoding, abstraction) need additional setup — hard-negative minimal pairs, AR reconstruction in the loop, and multi-context pooling — and are not scored here; they are deferred to a later run. The general-domain pass with NLAttack's broad concept pool fell below the harness's eight-concept reliability floor on our held sets, so the scored result above is on the deception-domain set where concept coverage was sufficient. Regenerate with `make_nlattack_v01_figure.py` after a fresh NLAttack run.
+
 ## What makes this release distinctive
 
 - **First non-Anthropic-team open-source NLA AV** at any model scale. As of 2026-05, every other NLA on HuggingFace Hub is under the `kitft` account (Kit Fraser-Taliente, the paper's first author and Anthropic's official reference). v0.0.1 is the second-source replication.

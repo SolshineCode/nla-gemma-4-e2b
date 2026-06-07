@@ -84,6 +84,12 @@ All repos live under the [`Solshine`](https://huggingface.co/Solshine) account w
 
 For the full per-checkpoint headline table see [`MODEL_CARD_AV.md`](MODEL_CARD_AV.md) and [`MODEL_CARD_AR.md`](MODEL_CARD_AR.md). For the head-to-head Neuronpedia cross-NLA calibration data + LLM-judge verdicts behind the framing above, see [`RELEASE_CALIBRATION.md`](RELEASE_CALIBRATION.md). Internal methodology investigation, experiment numbering, and audit trail are in the source research repo.
 
+## NLAttack capability-floor evaluation
+
+![NLAttack emergence dashboard for the v0.1 NLA bottleneck](figures/nlattack_v01_capability_floor.png)
+
+The v0.1 NLA was run through the [NLAttack](https://github.com/SolshineCode/NLAttack) capability-floor harness, whose emergence dashboard scores nine bottleneck-representation axes against per-axis permutation nulls. On a held-out deception-domain set the v0.1 bottleneck scores **EmergenceIndex 0.601 — "established: stable, selective, generalizing representation,"** driven by **decodability = 1.00** (a linear probe reads the injected concept off the activation at ceiling) and **stability = 0.88** across seeds. This is the same finding as the headline gap, measured a different way: the activation carries the content (the bottleneck is good); the verbalizer is what does not yet surface it. Four axes (content_adjacency, faithful_rank, graded_encoding, abstraction) need minimal-pairs / AR-in-the-loop / multi-context setup and are deferred. The broad-pool general-domain pass fell below the harness's eight-concept reliability floor on our held sets, so the scored result is on the deception-domain set. Detail in [`MODEL_CARD_AV.md`](MODEL_CARD_AV.md); regenerate with `make_nlattack_v01_figure.py`.
+
 ## Why this SFT pair, not a GRPO checkpoint
 
 The Anthropic NLA recipe has four phases: Stages 0–3 (data + labeling) → SFT → **Phase 4 GRPO** (joint RL fine-tune of the AV with the AR's reconstruction-MSE as reward). The v0.0.1 and v0.1 pairs published here are the **SFT-only** output (Phases 1–3); Phase 4 GRPO was deferred at first release because it had not yet been adapted to the 4 GB hardware regime.

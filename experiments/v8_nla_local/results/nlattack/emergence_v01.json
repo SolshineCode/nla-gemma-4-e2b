@@ -1,0 +1,88 @@
+{
+  "index": 0.6012123341608534,
+  "n_available": 6,
+  "confident": true,
+  "label": "established: stable, selective, generalizing representation",
+  "axes": [
+    {
+      "name": "decodability",
+      "available": true,
+      "raw": 0.9934278241431107,
+      "null": 0.5,
+      "margin": 0.42639974983258166,
+      "score": 1.0
+    },
+    {
+      "name": "sufficiency",
+      "available": true,
+      "raw": -0.004913202126448468,
+      "null": 0.0,
+      "margin": -0.004913202126448468,
+      "score": 0.31695599291183846
+    },
+    {
+      "name": "selectivity",
+      "available": true,
+      "raw": 0.1794550515366911,
+      "null": 0.0,
+      "margin": 0.1794550515366911,
+      "score": 0.5127287186762604
+    },
+    {
+      "name": "content_adjacency",
+      "available": false,
+      "raw": NaN,
+      "null": NaN,
+      "margin": NaN,
+      "score": NaN
+    },
+    {
+      "name": "faithful_rank",
+      "available": false,
+      "raw": NaN,
+      "null": NaN,
+      "margin": NaN,
+      "score": NaN
+    },
+    {
+      "name": "stability",
+      "available": true,
+      "raw": 0.8801752936271654,
+      "null": 0.023766939080153666,
+      "margin": 0.8564083545470117,
+      "score": 0.877258093331536
+    },
+    {
+      "name": "dose_response",
+      "available": true,
+      "raw": -1.0,
+      "null": 0.0,
+      "margin": -1.0,
+      "score": 0.0
+    },
+    {
+      "name": "graded_encoding",
+      "available": false,
+      "raw": NaN,
+      "null": NaN,
+      "margin": NaN,
+      "score": NaN
+    },
+    {
+      "name": "abstraction",
+      "available": false,
+      "raw": NaN,
+      "null": NaN,
+      "margin": NaN,
+      "score": NaN
+    },
+    {
+      "name": "effective_rank",
+      "available": true,
+      "raw": 2.6517341522760405,
+      "null": 4.0,
+      "margin": 1.3482658477239595,
+      "score": 0.8988438988496918
+    }
+  ]
+}
