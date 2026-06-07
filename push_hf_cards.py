@@ -21,6 +21,8 @@ if not TOKEN:
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIG = os.path.join(HERE, "figures", "nla_eval_across_versions.png")
+NLATTACK_FIG = os.path.join(HERE, "figures", "nlattack_v01_capability_floor.png")
+NLATTACK_FIG_RELPATH = "figures/nlattack_v01_capability_floor.png"
 CARD = os.path.join(HERE, "MODEL_CARD_AV.md")
 V01_REPO = "Solshine/gemma-4-e2b-nla-L23-av-v0_1_dd-step_250"
 V001_REPO = "Solshine/gemma-4-e2b-nla-L23-av-v0_0_1"
@@ -47,6 +49,9 @@ def main():
     # figure to both repos
     for repo in (V01_REPO, V001_REPO):
         upload(FIG, FIG_RELPATH, repo)
+
+    # NLAttack capability-floor figure — referenced by the v0.1 MODEL_CARD_AV.md
+    upload(NLATTACK_FIG, NLATTACK_FIG_RELPATH, V01_REPO)
 
     # v0.1 repo: the integrated MODEL_CARD_AV.md becomes the README
     upload(CARD, "README.md", V01_REPO)
