@@ -98,6 +98,20 @@ Working end-to-end round-trip example with the matched AV: `examples/round_trip_
 
 - **Round-trip cosine** with the matched [v0.0.1 AV](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1): **0.438 ± 0.054** on n=42 held-out activations, 100% above the 0.30 noise floor.
 
+## Evaluation across released versions
+
+![NLA round-trip reconstruction across released versions](figures/nla_eval_across_versions.png)
+
+Round-trip reconstruction cosine (right panel) is the AR's headline metric, shown across the released NLA versions alongside the AV's content-fidelity doc-retrieval (left panel): **v0.0.1 round-trips at 0.438, v0.1 at 0.460**, both above the 0.30 noise floor and well below Anthropic's deployed ~0.99. Round-trip cosine on this LoRA + linear-head AR is **largely a structural-projection metric, not per-row faithfulness** — a fixed structural component of the reconstruction tracks the activation manifold independent of the input explanation (see Limitations). Treat it as a sanity floor, not an accuracy claim. Regenerate with `make_nla_eval_figure.py` as new versions or evaluations land.
+
+## NLAttack capability-floor evaluation
+
+![NLAttack emergence dashboard for the NLA bottleneck](figures/nlattack_v01_capability_floor.png)
+
+The AR reconstructs an activation from the AV's text, so what that target activation actually *carries* matters. It was characterized independently by the [NLAttack](https://github.com/SolshineCode/NLAttack) capability-floor harness — a battery of concept-survival and emergence tests over the NLA's information bottleneck. On a held-out deception-domain set the bottleneck scores **EmergenceIndex 0.601 — "established: stable, selective, generalizing representation,"** driven by **decodability = 1.00** (a linear probe reads the injected concept off the residual activation at ceiling) and **stability = 0.88** across seeds.
+
+For the AR this fixes the target: the representation it maps back toward is well-formed and near-perfectly decodable, so the open problem in the pair is the *verbalizer's* surfacing of content into text, not the bottleneck the AR reconstructs. One of NLAttack's deferred axes, **`faithful_rank`** (reconstruction faithfulness with the AR in the loop), is the natural AR-side eval to add next — it is unscored here pending hard-negative minimal pairs and AR-in-the-loop setup. Regenerate with `make_nlattack_v01_figure.py` after a fresh NLAttack run.
+
 ## What makes this release distinctive
 
 - **First non-Anthropic-team open-source NLA AR** at any model scale.

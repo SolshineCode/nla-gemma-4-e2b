@@ -24,8 +24,10 @@ FIG = os.path.join(HERE, "figures", "nla_eval_across_versions.png")
 NLATTACK_FIG = os.path.join(HERE, "figures", "nlattack_v01_capability_floor.png")
 NLATTACK_FIG_RELPATH = "figures/nlattack_v01_capability_floor.png"
 CARD = os.path.join(HERE, "MODEL_CARD_AV.md")
+AR_CARD = os.path.join(HERE, "MODEL_CARD_AR.md")
 V01_REPO = "Solshine/gemma-4-e2b-nla-L23-av-v0_1_dd-step_250"
 V001_REPO = "Solshine/gemma-4-e2b-nla-L23-av-v0_0_1"
+AR_REPO = "Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1"
 FIG_RELPATH = "figures/nla_eval_across_versions.png"
 FIG_BLOCK = ("\n## Evaluation across released versions\n\n"
              f"![NLA AV evaluation across released versions]({FIG_RELPATH})\n\n"
@@ -52,6 +54,12 @@ def main():
 
     # NLAttack capability-floor figure — referenced by the v0.1 MODEL_CARD_AV.md
     upload(NLATTACK_FIG, NLATTACK_FIG_RELPATH, V01_REPO)
+
+    # AR repo: bring the AR card up to the AV card (cross-version round-trip figure + NLAttack section).
+    # Both figures are referenced by the updated MODEL_CARD_AR.md.
+    upload(FIG, FIG_RELPATH, AR_REPO)
+    upload(NLATTACK_FIG, NLATTACK_FIG_RELPATH, AR_REPO)
+    upload(AR_CARD, "README.md", AR_REPO)
 
     # v0.1 repo: the integrated MODEL_CARD_AV.md becomes the README
     upload(CARD, "README.md", V01_REPO)
