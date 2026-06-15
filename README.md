@@ -10,6 +10,8 @@
 - **AV:** [`Solshine/gemma-4-e2b-nla-L23-av-v0_1_dd-step_250`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_1_dd-step_250)
 - **AR:** [`Solshine/gemma-4-e2b-nla-L23-ar-v0_1-paraphrase-invariant`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_1-paraphrase-invariant)
 
+**All research checkpoints (every training run, ~55 GB):** [`Solshine/nla-gemma4e2b-research-checkpoints`](https://huggingface.co/Solshine/nla-gemma4e2b-research-checkpoints). This repo holds the full trajectory of LoRA adapters across every experimental run behind this project (injection-layer ablations, the domain-aware contrastive objective, capacity sweeps, prior-deviation weighting), saved per-run with the injection config needed to reproduce each one. It is published for reproducibility and is an in-progress research artifact, a prelude to a future publication, not a finished release. The two pair adapters above are the polished v0.1 release; the research-checkpoints repo is everything else.
+
 ## What this is
 
 A working pair of NLA adapters for `google/gemma-4-E2B` at residual-stream layer 23, following a **customized variation (see below)** of the methodology of Fraser-Taliente, Kantamneni, Ong et al. 2026 ([Transformer Circuits](https://transformer-circuits.pub/2026/nla/)).
