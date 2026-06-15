@@ -16,7 +16,7 @@ library_name: peft
 pipeline_tag: text-generation
 ---
 
-# Gemma-4-E2B NLA AV (Activation Verbalizer) — v0.0.1
+# Gemma-4-E2B NLA AV (Activation Verbalizer) — v0.1
 
 LoRA adapter for `google/gemma-4-E2B` that takes a 1536-dimensional residual-stream activation captured at layer 23 and produces a natural-language explanation of what the activation represents.
 
@@ -30,7 +30,7 @@ This release adapts the NLA recipe to consumer hardware and adds evaluation, so 
 - **SFT-only released pair:** Phase-4 GRPO was explored separately and is **not** in the shipped pair (it did not beat the SFT pair at 4 GB).
 - **Added evaluations beyond round-trip cosine:** content-specificity doc-level retrieval (lexical / semantic / LLM-judge), an in-domain-vs-out-of-domain domain-sensitivity analysis, an activation-ceiling probe, and a cross-version evaluation figure (above).
 
-Pairs with the matched [`Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1) reconstructor.
+Pairs with the matched [`Solshine/gemma-4-e2b-nla-L23-ar-v0_1-paraphrase-invariant`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_1-paraphrase-invariant) reconstructor.
 
 ## How to use
 
@@ -41,7 +41,7 @@ import numpy as np
 import torch
 
 BASE = "google/gemma-4-E2B"
-AV_REPO = "Solshine/gemma-4-e2b-nla-L23-av-v0_0_1"
+AV_REPO = "Solshine/gemma-4-e2b-nla-L23-av-v0_1_dd-step_250"
 
 # Injection convention
 INJECTION_TOKEN_ID = 249568           # ㊗
@@ -103,20 +103,19 @@ Working end-to-end round-trip example with the matched AR: `examples/round_trip_
 - **Base model**: `google/gemma-4-E2B` (2B parameters, 35 text layers)
 - **Activation layer**: L23 residual stream
 - **Quantization**: NF4 4-bit base weights + fp16 LoRA adapters
-- **LoRA config**: r=64, α=128, target modules = `model.language_model.layers.\d+.(self_attn|mlp).(q_proj|k_proj|v_proj|o_proj|gate_proj|up_proj|down_proj)` (language-model layers only; excludes audio tower)
+- **LoRA config**: r=80, α=128 (v0.1; v0.0.1 used r=64), target modules = `model.language_model.layers.\d+.(self_attn|mlp).(q_proj|k_proj|v_proj|o_proj|gate_proj|up_proj|down_proj)` (language-model layers only; excludes audio tower)
 - **Injection mechanism**: forward hook on embedding layer; replaces ㊗ token's embedding with the L2-normalized activation rescaled to `injection_scale = sqrt(d_model) = 39.2` (matches the empirically-measured Gemma-4-E2B token-embedding norm of 39.25)
 - **Optimizer**: AdamW 8-bit, lr=1e-4
 - **Batch**: micro_batch=1, grad_accum=4 → effective batch 4
 - **Max length**: 512 tokens
-- **SFT steps**: 55 total (15 base + 40 continuation)
+- **SFT steps**: 250 (this v0.1 AV is the step-250 checkpoint, `dd-step_250`; v0.0.1 used 55 total). A continuation past step 250 regressed on the held-out content-retrieval trajectory, so step 250 is the released checkpoint.
 - **Hardware**: single 4 GB NVIDIA GTX 1650 Ti Max-Q (laptop)
-- **Total wall time**: ~3 GPU-hours end-to-end (including base-model NF4 load)
-- **Training corpus**: 2,548 (text, L23 activation, gpt-4o-mini-labeled explanation) triples on the v0.0.x baseline pipeline
+- **Training corpus**: (text, L23 activation, LLM-labeled explanation) triples from the same consumer-GPU NLA pipeline that produced v0.0.1 (2,548 triples on the v0.0.x baseline)
 
-## Headline numbers (v0.0.1)
+## Headline numbers (v0.1)
 
-- **Round-trip cosine** (paired with [`Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1)): **0.438 ± 0.054** on n=42 effective held-out activations, 100% above the 0.30 noise floor.
-- **AV under SFT loss slope** at converged: −0.0028/step linear regression on raw loss (descending verdict, R² ≥ 0.10).
+- **Round-trip cosine** (paired with [`Solshine/gemma-4-e2b-nla-L23-ar-v0_1-paraphrase-invariant`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_1-paraphrase-invariant)): **0.460**, above the 0.30 noise floor (v0.0.1 round-tripped at 0.438 ± 0.054 on n=42 effective held-out activations). See the cross-version figure below.
+- **NLAttack EmergenceIndex** on the held-out deception-domain bottleneck: **0.601** ("established: stable, selective, generalizing representation"), driven by decodability = 1.00 and stability = 0.88 (see the NLAttack section below).
 
 ## Evaluation across released versions
 
@@ -147,8 +146,8 @@ Four axes (content_adjacency, faithful_rank, graded_encoding, abstraction) need 
 
 ## What makes this release distinctive
 
-- **First non-Anthropic-team open-source NLA AV** at any model scale. As of 2026-05, every other NLA on HuggingFace Hub is under the `kitft` account (Kit Fraser-Taliente, the paper's first author and Anthropic's official reference). v0.0.1 is the second-source replication.
-- **First LoRA-based NLA AV.** Anthropic's published NLA AVs are full fine-tunes at bf16. This release demonstrates that a **LoRA adapter (r=64, α=128)** over NF4-quantized Gemma-4-E2B can train the AV half of an NLA pair to the same output FORMAT class (fluent multi-paragraph descriptive text) at 13× smaller parameter scale. Per-row content fidelity is lower than Anthropic's deployed NLAs, though a ceiling test shows that content is present in the activation (60% linear probe on 13-way document identity) and simply not yet surfaced by the verbalizer rather than absent — see "Limitations" below for the head-to-head and the activation-ceiling result. Shipping as a LoRA adapter means the AV loads in ~1.5 GB VRAM on top of the frozen NF4 base, vs ~12 GB for a full bf16 AV.
+- **First non-Anthropic-team open-source NLA AV** at any model scale. As of 2026-05, every other NLA on HuggingFace Hub is under the `kitft` account (Kit Fraser-Taliente, the paper's first author and Anthropic's official reference). This pair is the second-source replication.
+- **First LoRA-based NLA AV.** Anthropic's published NLA AVs are full fine-tunes at bf16. This release demonstrates that a **LoRA adapter (r=80, α=128 for v0.1)** over NF4-quantized Gemma-4-E2B can train the AV half of an NLA pair to the same output FORMAT class (fluent multi-paragraph descriptive text) at 13× smaller parameter scale. Per-row content fidelity is lower than Anthropic's deployed NLAs, though a ceiling test shows that content is present in the activation (60% linear probe on 13-way document identity) and simply not yet surfaced by the verbalizer rather than absent — see "Limitations" below for the head-to-head and the activation-ceiling result. Shipping as a LoRA adapter means the AV loads in ~1.5 GB VRAM on top of the frozen NF4 base, vs ~12 GB for a full bf16 AV.
 - **Consumer-GPU trainable.** End-to-end training fits on a 4 GB laptop GPU because of the LoRA + NF4 stack. The methodology descope (NF4 + LoRA + small corpus + ≤300 SFT steps vs Anthropic's full bf16 fine-tune on 8–64 H100s) is documented per parameter.
 - **Full open reproducibility chain** in the bundled repo: Stage 0 (extraction) → Stage 1 (split) → Stage 2 (LLM-judge labeling) → Stage 3 (training-format build) → SFT → eval.
 
@@ -203,10 +202,10 @@ The companion `nla_meta.yaml` records training-time hyperparameters for round-tr
 }
 
 @misc{deleeuw2026nlagemma4e2bav,
-  title={Gemma-4-E2B NLA AV (v0.0.1): a 4 GB consumer-GPU Activation Verbalizer},
+  title={Gemma-4-E2B NLA AV (v0.1): a 4 GB consumer-GPU Activation Verbalizer},
   author={DeLeeuw, Caleb (SolshineCode)},
   year={2026},
-  url={https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_0_1}
+  url={https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_1_dd-step_250}
 }
 ```
 

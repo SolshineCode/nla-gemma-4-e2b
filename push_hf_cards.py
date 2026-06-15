@@ -25,9 +25,11 @@ NLATTACK_FIG = os.path.join(HERE, "figures", "nlattack_v01_capability_floor.png"
 NLATTACK_FIG_RELPATH = "figures/nlattack_v01_capability_floor.png"
 CARD = os.path.join(HERE, "MODEL_CARD_AV.md")
 AR_CARD = os.path.join(HERE, "MODEL_CARD_AR.md")
+AR_V01_CARD = os.path.join(HERE, "MODEL_CARD_AR_v01.md")
 V01_REPO = "Solshine/gemma-4-e2b-nla-L23-av-v0_1_dd-step_250"
 V001_REPO = "Solshine/gemma-4-e2b-nla-L23-av-v0_0_1"
 AR_REPO = "Solshine/gemma-4-e2b-nla-L23-ar-v0_0_1"
+AR_V01_REPO = "Solshine/gemma-4-e2b-nla-L23-ar-v0_1-paraphrase-invariant"
 FIG_RELPATH = "figures/nla_eval_across_versions.png"
 FIG_BLOCK = ("\n## Evaluation across released versions\n\n"
              f"![NLA AV evaluation across released versions]({FIG_RELPATH})\n\n"
@@ -61,7 +63,13 @@ def main():
     upload(NLATTACK_FIG, NLATTACK_FIG_RELPATH, AR_REPO)
     upload(AR_CARD, "README.md", AR_REPO)
 
-    # v0.1 repo: the integrated MODEL_CARD_AV.md becomes the README
+    # v0.1 paraphrase-invariant AR repo: both figures + the v0.1 AR card as README.
+    # Both figures are referenced by MODEL_CARD_AR_v01.md.
+    upload(FIG, FIG_RELPATH, AR_V01_REPO)
+    upload(NLATTACK_FIG, NLATTACK_FIG_RELPATH, AR_V01_REPO)
+    upload(AR_V01_CARD, "README.md", AR_V01_REPO)
+
+    # v0.1 AV repo: the integrated MODEL_CARD_AV.md becomes the README
     upload(CARD, "README.md", V01_REPO)
 
     # v0.0.1 repo: keep its text, just insert the figure block after the YAML frontmatter
