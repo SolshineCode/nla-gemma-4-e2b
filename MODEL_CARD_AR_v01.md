@@ -25,6 +25,18 @@ This is the **v0.1 paraphrase-invariant** Activation Reconstructor. It continues
 ### Customizations vs the source methodology
 A consumer-hardware *variation*, not a faithful reproduction: a **LoRA adapter (+ a 1536→1536 linear head) over a 4-bit NF4-quantized** frozen base rather than full-fine-tune bf16; a single 4 GB GPU with micro-batch 1 + gradient accumulation and a modest SFT-step budget; an **SFT-only** released pair (Phase-4 GRPO explored separately, not shipped); a **paraphrase-invariance auxiliary loss** added in v0.1 (not part of the source recipe); and added AV-side evaluations beyond round-trip cosine (see the matched [`MODEL_CARD_AV.md`](MODEL_CARD_AV.md)). Note round-trip cosine on this AR is largely a structural-projection metric, not per-row faithfulness — see Limitations.
 
+## What the paired verbalizer reads from an activation (round-trip ceiling)
+
+The reconstructor is one half of a round-trip: an activation is verbalized by the [paired Activation Verbalizer](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-av-v0_1_dd-step_250), and this AR maps that explanation back to an activation. So the round-trip can only be as content-specific as the verbalizer's reading of the activation in the first place. A focused June 2026 evaluation measured exactly that, with a confound-free forced choice (fix the target text, swap only the injected activation, so text length and perplexity cancel; chance 0.5):
+
+![v0.1 content-discrimination: routes across domains, does not read within-domain content](figures/v01_content_discrimination.png)
+
+- **Across domains (routing): 0.676, p = 0.005.** The verbalizer reliably tracks which domain an activation came from.
+- **Within a domain (content): 0.456, at chance.** It cannot distinguish two activations from the same domain.
+- The split is stable across target lengths (16 / 32 / 48 tokens) and uniform across all five test domains; routing is led by legal at 0.93.
+
+**What this means for the AR:** the v0.1 round-trip carries domain-level information well but is not expected to preserve fine-grained within-domain content, because the verbalizer it depends on does not resolve that content. This is consistent with the structural-projection behavior described below, and closing the within-domain gap is the focus of ongoing work. (n = 68 held-out activations; confound-free forced-choice likelihood metric.)
+
 ## What paraphrase-invariance means (v0.1)
 
 The v0.0.1 AR has a documented weakness: paraphrasing the input explanation moves the reconstructed cosine by only ~3% (Δcos_paraphrase = +0.014), so the reconstruction is nearly invariant to the explanation's content and mostly projects toward the activation manifold. The v0.1 AR attacks that directly during training. For each row it builds a meaning-preserving paraphrase of the explanation (Gemini-generated, same factual claims and topic, different vocabulary and sentence structure) and trains with an auxiliary term so the reconstruction from the paraphrase matches the same target as the reconstruction from the original:

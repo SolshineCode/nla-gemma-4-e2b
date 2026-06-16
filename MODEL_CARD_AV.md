@@ -32,6 +32,18 @@ This release adapts the NLA recipe to consumer hardware and adds evaluation, so 
 
 Pairs with the matched [`Solshine/gemma-4-e2b-nla-L23-ar-v0_1-paraphrase-invariant`](https://huggingface.co/Solshine/gemma-4-e2b-nla-L23-ar-v0_1-paraphrase-invariant) reconstructor.
 
+## What this verbalizer reads from an activation (and what it does not)
+
+A focused June 2026 evaluation pins down where v0.1's activation-conditioning is strong and where it is not. The test is a confound-free forced choice: fix the target text, swap only the injected activation, and ask whether the right activation makes its own text more likely than a wrong activation does. Because the scored text is identical on both sides, text length and perplexity cancel exactly, so the score isolates pure activation-conditioning. Chance is 0.5.
+
+![v0.1 content-discrimination: routes across domains, does not read within-domain content](figures/v01_content_discrimination.png)
+
+- **Across domains (routing): 0.676, p = 0.005.** Given two activations from different domains, the verbalizer reliably prefers the text matching the activation it was actually given. It tracks which domain an activation came from.
+- **Within a domain (content): 0.456, at chance.** Given two activations from the same domain, it cannot tell them apart. It does not resolve which specific activation within a domain it is describing.
+- The split holds across target lengths (16 / 32 / 48 tokens) and is uniform across all five test domains. Routing is broad and led by legal at 0.93; within-domain content is null everywhere.
+
+**What this means in practice:** read v0.1's conditioning as a domain-level signal, not a fine-grained content readout. Its explanations track the broad topic of an activation much better than the specific feature within that topic. Narrowing this within-domain gap is the focus of ongoing work. (n = 68 held-out activations, balanced across legal, math, reviews, science, and medicine; confound-free forced-choice likelihood metric.)
+
 ## How to use
 
 ```python
