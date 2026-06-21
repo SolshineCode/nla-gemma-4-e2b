@@ -277,4 +277,20 @@ Full evidence: source research repo `experiments/v8_nla_local/autoresearch/notes
 
 ---
 
+## 2026-06-19 to 2026-06-20 — E4B ARM A: total mode collapse confirms §F89 at scale; Gate R → GRPO
+
+**Context.** Following the publication of §F89 (injection channel cleared, objective is the wall) and §F90 (balanced 15-domain corpus + mean-centering), the E4B scale test (google/gemma-4-E4B, D_MODEL=2560, INJECT_LAYER=24) ran ARM A: domain-aware InfoNCE (16 same-domain + 16 cross-domain negatives), mean-centered injection, LoRA r=8, 1500 steps, seed 17, balanced corpus. Kernel: `calebdeleeuw/e4b-nla-train-0619`. Artifacts: `SolshineCode/e4b-nla-colab/results/e4b/arm_a_summary.json`.
+
+**Kill gate: PASS (misleading).** Linear regression on raw 1500-step loss: slope = −0.00254/step, R² = 0.135. Both thresholds cleared (slope < −0.002, R² ≥ 0.10). The loss descends.
+
+**Eval result: total mode collapse.** n=68 eval rows; TF-IDF doc_top1 = 0.0 (p=1.0); semantic doc_top1 = 0.0 (p=1.0); n_unique = 1/68. All 68 outputs were identical: *"The Zombie Chronicles review: watching the awful anthology film twice despite knowing the ending."* Gen-compare at step 250 (n=12) also showed n_unique=1.
+
+**Interpretation.** The model found a single B-movie-review template that satisfies the `<explanation>...</explanation>` format constraint. The domain-aware InfoNCE loss is minimized by this constant output — the injected activation is ignored entirely. This is the Bowman 1511.06349 posterior-collapse failure mode under a different name: the objective imposes no reconstruction pressure. §F89's "objective is the wall" finding holds at 2× active parameters.
+
+**Gate R decision: GRPO on E2B first** (Stage 4 reconstruction-reward, DAPO variant). Running as `calebdeleeuw/e2b-nla-grpo-0620`. TF-IDF retrieval reward (binary hard @1) + soft cosine; G=4; 600 steps; pre-registered success bar: mean_hard_retrieval > 0.1 AND n_unique ≥ 5/20. A positive result enables a clean E4B scale test; all remaining SFT arms (B/C/D) are expected to collapse for the same reason.
+
+Full artifacts in `SolshineCode/e4b-nla-colab` (branch `e4b-nla-findings`): `results/e4b/arm_a_summary.json`, `results/e4b/gate_r_decision.json`, `notes/FINDINGS.md §F91`, `train_grpo_e2b.py`.
+
+---
+
 *Append-only. New entries go at the bottom with date and a brief summary; old entries are preserved verbatim. If a finding is overturned, append a new entry with a `(supersedes §X above)` block — do not edit the original entry. Audit trail is the goal.*
